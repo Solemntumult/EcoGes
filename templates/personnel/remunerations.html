@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Rémunérations{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-cash-stack me-2 text-primary"></i>Rémunérations des enseignants</h1>
+            <p class="text-muted mb-0 mt-1">
+                Salaire calculé automatiquement : heures de cours (emploi du temps) × tarif horaire de chaque
+                affectation (enseignant + matière), sur toutes les classes. Mois moyen : 52 semaines / 12 ≈ 4,33.
+            </p>
+        </div>
+        <a href="{% url 'personnel:affectations' %}" class="btn btn-outline-primary">
+            <i class="bi bi-person-gear me-1"></i>Affectations & tarifs
+        </a>
+    </div>
+
+    <form method="get" class="card mb-3">
+        <div class="card-body row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-1">Mois</label>
+                <select name="mois" class="form-select" onchange="this.form.submit()">
+                    {% for m in mois_choix %}<option value="{{ forloop.counter }}" {% if mois == forloop.counter %}selected{% endif %}>{{ m|capfirst }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">Année</label>
+                <select name="annee" class="form-select" onchange="this.form.submit()">
+                    {% for a in annees %}<option value="{{ a }}" {% if annee == a %}selected{% endif %}>{{ a }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">Heures / semaine (toutes classes)</label>
+                <input class="form-control fw-bold" value="{{ total_hebdo }} h" disabled>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">Masse mensuelle estimée ({{ mois_libelle }})</label>
+                <input class="form-control fw-bold text-success" value="{{ masse_mensuelle }} F" disabled>
+            </div>
+        </div>
+    </form>
+
+    <div class="card">
+        <div class="card-header fw-semibold">Enseignants — {{ mois_libelle }} {{ annee }}</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Enseignant</th>
+                            <th class="text-center">Heures / semaine</th>
+                            <th class="text-end">Mensuel estimé</th>
+                            <th class="text-center">Fiche {{ mois_libelle }}</th>
+                            <th style="width:220px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in lignes %}
+                        <tr>
+                            <td class="fw-semibold">{{ ligne.personnel.nom }} {{ ligne.personnel.prenoms }}</td>
+                            <td class="text-center">{{ ligne.total_hebdo }} h</td>
+                            <td class="text-end fw-semibold">{{ ligne.montant_mensuel }} F</td>
+                            <td class="text-center">
+                                {% if ligne.fiche %}
+                                <span class="badge {% if ligne.fiche.statut == 'PAYEE' %}text-bg-success{% elif ligne.fiche.statut == 'ANNULEE' %}text-bg-secondary{% else %}text-bg-warning{% endif %}">
+                                    {{ ligne.fiche.get_statut_display }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ligne.fiche %}
+                                <a href="{% url 'personnel:fiche_paie' ligne.fiche.pk %}" class="btn btn-sm btn-outline-primary w-100">
+                                    <i class="bi bi-file-earmark-text me-1"></i>Voir la fiche
+                                </a>
+                                {% else %}
+                                <form method="post" class="m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="personnel" value="{{ ligne.personnel.pk }}">
+                                    <input type="hidden" name="mois" value="{{ mois }}">
+                                    <input type="hidden" name="annee" value="{{ annee }}">
+                                    <button class="btn btn-sm btn-primary w-100"><i class="bi bi-plus-lg me-1"></i>Générer la fiche</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">Aucun enseignant actif.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white small text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            Seules les heures réellement planifiées dans l'emploi du temps sont comptées.
+            Une fiche déjà payée n'est pas recalculée ; une fiche calculée l'est à chaque régénération.
+        </div>
+    </div>
+</div>
+{% endblock %}

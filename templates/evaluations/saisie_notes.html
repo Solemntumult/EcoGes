@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Saisie des notes — {{ evaluation }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>Saisie des notes</h1>
+            <p class="text-muted mb-0 mt-1">
+                {{ evaluation.matiere.libelle }} · {{ evaluation.classe.libelle }} ·
+                {{ evaluation.get_type_evaluation_display }} du {{ evaluation.date|date:"d/m/Y" }}
+                · Coef. {{ evaluation.coefficient }}
+            </p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            {% if verrouillee %}
+            <span class="badge badge-soft-danger fs-6"><i class="bi bi-lock-fill"></i> Notes verrouillées</span>
+            {% else %}
+            <span class="badge badge-soft-success fs-6">Saisie ouverte</span>
+            <form method="post" action="{% url 'evaluations:verrouiller' evaluation.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Verrouiller définitivement les notes de cette évaluation ?')">
+                    <i class="bi bi-lock me-1"></i>Valider définitivement
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if verrouillee %}
+    <div class="alert alert-warning py-2">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Les notes sont verrouillées : toute modification sera tracée (qui, quand, ancienne et nouvelle valeur).
+    </div>
+    {% endif %}
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header fw-semibold">
+                    Notes ({{ form.fields|length }} élève(s)) — plage 0 à 20
+                </div>
+                <div class="card-body">
+                    {% if verrouillee %}
+                    <table class="table">
+                        <thead><tr><th>Élève</th><th style="width:140px">Note</th></tr></thead>
+                        <tbody>
+                            {% for nom, champ in form.fields.items %}
+                            {% with valeur=champ.initial %}
+                            <tr>
+                                <td>{{ champ.label }}</td>
+                                <td><span class="badge {% if valeur is None %}badge-soft-secondary{% elif valeur >= 10 %}badge-soft-success{% else %}badge-soft-danger{% endif %} fs-6">{{ valeur|default:"Non saisie" }}</span></td>
+                            </tr>
+                            {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead><tr><th>Élève</th><th style="width:160px">Note (0–20)</th></tr></thead>
+                                <tbody>
+                                    {% for nom, champ in form.fields.items %}
+                                    <tr>
+                                        <td class="fw-semibold">{{ champ.label }}</td>
+                                        <td>
+                                            <input type="number" step="0.25" min="0" max="20" class="form-control"
+                                                   name="{{ nom }}" value="{{ champ.initial|default_if_none:'' }}" placeholder="—">
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-primary px-4"><i class="bi bi-save me-1"></i>Enregistrer les notes</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-clock-history me-1"></i>Modifications tracées</div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for modif in modifications %}
+                        <li class="list-group-item small">
+                            <strong>{{ modif.ancienne_valeur }} → {{ modif.nouvelle_valeur }}</strong>
+                            <div class="text-muted">
+                                {{ modif.date_modification|date:"d/m/Y H:i" }}
+                                {% if modif.modifie_par %}par {{ modif.modifie_par.get_full_name|default:modif.modifie_par.username }}{% endif %}
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted">Aucune modification après verrouillage.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Modifier {{ eleve }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header">
+        <h1 class="mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>Modifier le dossier — {{ eleve }}</h1>
+    </div>
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header fw-semibold">Informations personnelles</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">Nom *</label>{{ form_eleve.nom }}</div>
+                            <div class="col-md-6"><label class="form-label">Prénoms *</label>{{ form_eleve.prenoms }}</div>
+                            <div class="col-md-4"><label class="form-label">Sexe</label>{{ form_eleve.sexe }}</div>
+                            <div class="col-md-4"><label class="form-label">Date de naissance</label>{{ form_eleve.date_naissance }}</div>
+                            <div class="col-md-4"><label class="form-label">Lieu de naissance</label>{{ form_eleve.lieu_naissance }}</div>
+                            <div class="col-md-4"><label class="form-label">Régime</label>{{ form_eleve.regime }}</div>
+                            <div class="col-md-8"><label class="form-label">Adresse</label>{{ form_eleve.adresse }}</div>
+                            <div class="col-12"><label class="form-label">Photo</label>{{ form_eleve.photo }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mt-3">
+                    <div class="card-header fw-semibold">Tuteurs / parents</div>
+                    <div class="card-body">
+                        {{ formset_tuteurs.management_form }}
+                        {% for form in formset_tuteurs %}
+                        <div class="row g-2 border-bottom pb-3 mb-3">
+                            {{ form.id }}
+                            <div class="col-md-4">{{ form.nom_complet }}</div>
+                            <div class="col-md-2">{{ form.lien_parente }}</div>
+                            <div class="col-md-3">{{ form.telephone }}</div>
+                            <div class="col-md-3">{{ form.email }}</div>
+                            <div class="col-md-8">{{ form.adresse }}</div>
+                            <div class="col-md-3"><div class="form-check">{{ form.contact_urgence }}<label class="form-check-label small">Urgence</label></div></div>
+                            {% if formset_tuteurs.can_delete %}<div class="col-md-1">{{ form.DELETE }} <span class="small text-danger">Suppr.</span></div>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary px-4"><i class="bi bi-check-lg me-1"></i>Enregistrer</button>
+                    <a href="{% url 'eleves:detail' eleve.pk %}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

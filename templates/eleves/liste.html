@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Élèves{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-people me-2 text-primary"></i>Élèves</h1>
+            <p class="text-muted mb-0 mt-1">Recherche multicritère et gestion des dossiers (UC-11 à UC-16).</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'eleves:reinscription' %}" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Réinscription en masse</a>
+            <a href="{% url 'eleves:creation' %}" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Inscrire un élève</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">{{ form.nom }}</div>
+                <div class="col-md-2">{{ form.matricule }}</div>
+                <div class="col-md-3">{{ form.classe }}</div>
+                <div class="col-md-2">{{ form.statut }}</div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> Rechercher</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead><tr><th>Matricule</th><th>Nom & prénoms</th><th>Sexe</th><th>Classe actuelle</th><th>Régime</th><th>Statut</th><th></th></tr></thead>
+                    <tbody>
+                        {% for eleve in eleves %}
+                        <tr>
+                            <td><span class="badge badge-soft-secondary font-monospace">{{ eleve.matricule }}</span></td>
+                            <td class="fw-semibold">{{ eleve.nom }} {{ eleve.prenoms }}</td>
+                            <td>{{ eleve.get_sexe_display }}</td>
+                            <td>
+                                {% with ins=eleve.inscriptions.all %}
+                                    {% for i in ins %}{% if i.statut == 'ACTIVE' %}{{ i.classe.libelle }}{% endif %}{% endfor %}
+                                {% endwith %}
+                            </td>
+                            <td>{{ eleve.get_regime_display }}</td>
+                            <td>
+                                {% if eleve.statut == 'ACTIF' %}<span class="badge badge-soft-success">Actif</span>
+                                {% elif eleve.statut == 'TRANSFERE' %}<span class="badge badge-soft-warning">Transféré</span>
+                                {% elif eleve.statut == 'RADIE' %}<span class="badge badge-soft-danger">Radié</span>
+                                {% else %}<span class="badge badge-soft-secondary">Diplômé</span>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'eleves:detail' eleve.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-folder2-open"></i> Dossier</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center text-muted py-4">Aucun élève ne correspond à la recherche.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if eleves.paginator.num_pages > 1 %}
+        <div class="card-footer"><nav>{% include "pagination.html" with page_obj=eleves %}</nav></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Bulletin {{ fiche.numero }}</title>
+    <style>
+        @page { size: A4; margin: 16mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; color: #1e293b; }
+        .entete { display: flex; justify-content: space-between; border-bottom: 3px solid #1d4ed8; padding-bottom: 8px; }
+        .etab { font-size: 18px; font-weight: 800; color: #1d4ed8; }
+        h2 { text-align: center; letter-spacing: 2px; margin: 14px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 8px; }
+        th { background: #eff6ff; text-align: left; }
+        .info td { border: none; padding: 1px 4px; }
+        .gras { font-weight: 700; }
+        .total td { font-size: 13px; background: #f8fafc; }
+        .pied { margin-top: 40px; display: flex; justify-content: space-between; font-size: 10px; }
+        .mention { margin-top: 30px; font-size: 9px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        <div style="display:flex; gap:10px;">
+            {% include "documents/_logos_en_tete.html" with hauteur=44 %}
+            <div>
+                <div class="etab">{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+                <div>Établissement d'enseignement — Service comptabilité{% if etab.adresse %} · {{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}</div>
+                <div>{% if etab.telephone %}Tél. {{ etab.telephone }} · {% endif %}IFU : {{ etab.ifu|default:"—" }}{% if etab.rccm %} · RCCM : {{ etab.rccm }}{% endif %}</div>
+            </div>
+        </div>
+        <div>Bulletin N° <strong>{{ fiche.numero }}</strong><br>{{ mois_libelle|capfirst }} {{ fiche.annee }}</div>
+    </div>
+
+    <h2>BULLETIN DE PAIE</h2>
+
+    <table class="info">
+        <tr><td class="gras">Bénéficiaire :</td><td>{{ fiche.personnel.nom }} {{ fiche.personnel.prenoms }}</td>
+            <td class="gras">Fonction :</td><td>{{ fiche.personnel.get_fonction_display }}</td></tr>
+        <tr><td class="gras">Qualification :</td><td>{{ fiche.personnel.qualification|default:"—" }}</td>
+            <td class="gras">Statut :</td><td>{{ fiche.get_statut_display }}</td></tr>
+    </table>
+
+    <table>
+        <thead>
+            <tr><th>Matière</th><th>Classe</th>
+                <th class="text-center">Heures / semaine</th>
+                <th class="text-center">Tarif horaire</th>
+                <th class="text-center">Montant hebdo</th>
+                <th class="text-center">Mensuel (×4,33)</th></tr>
+        </thead>
+        <tbody>
+            {% for ligne in lignes %}
+            <tr>
+                <td>{{ ligne.matiere }}</td>
+                <td>{{ ligne.classe }}</td>
+                <td class="text-center">{{ ligne.heures_hebdo }}</td>
+                <td class="text-center">{{ ligne.tarif_horaire }} F</td>
+                <td class="text-center">{{ ligne.montant_hebdo }} F</td>
+                <td class="text-center">{{ ligne.montant_hebdo }} F</td>
+            </tr>
+            {% endfor %}
+            <tr class="total">
+                <td class="gras" colspan="2">TOTAL</td>
+                <td class="text-center gras">{{ fiche.heures_total }} h</td>
+                <td colspan="2"></td>
+                <td class="text-center gras">{{ fiche.montant_brut }} F</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="pied">
+        <div>Le Comptable / La Comptable{% if etab.nom_comptable %}<br>{{ etab.nom_comptable }}{% endif %}<br>Cachet et signature</div>
+        <div>Net à payer : <strong>{{ fiche.montant_brut }} FCFA</strong></div>
+    </div>
+
+    {% if etab.mentions_legales %}
+    <div style="margin-top:24px; font-size:9px; color:#64748b; border-top:1px solid #cbd5e1; padding-top:8px; text-align:center;">{{ etab.mentions_legales|safe }}</div>
+    {% endif %}
+
+    <div class="mention">
+        Bulletin généré automatiquement par Gestion Scolaire — heures issues de l'emploi du temps,
+        tarifs horaires des affectations (enseignant / matière / classe). Montant mensuel = heures hebdo × 4,33.
+    </div>
+</body>
+</html>

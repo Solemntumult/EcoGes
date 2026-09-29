@@ -1,0 +1,12 @@
+Django==5.2.*
+# Pilote MySQL. Sur Windows, si mysqlclient ne compile pas,
+# PyMySQL est utilisé automatiquement via gestion_scolaire/__init__.py
+mysqlclient==2.2.*
+PyMySQL==1.2.*
+Pillow==11.*
+python-dotenv==1.*
+# Génération PDF. Windows : installer aussi le runtime GTK3 (voir README)
+weasyprint==63.*
+qrcode==8.*
+openpyxl==3.1.*
+python-docx==1.2.*

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Personnel{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-person-video3 me-2 text-primary"></i>Personnel</h1>
+            <p class="text-muted mb-0 mt-1">Fiches enseignants & staff, affectations et emploi du temps.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'personnel:affectations' %}" class="btn btn-outline-primary"><i class="bi bi-link-45deg me-1"></i>Affectations</a>
+            <a href="{% url 'personnel:creer' %}" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Nouvelle fiche</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <select name="fonction" class="form-select">
+                        <option value="">Toutes les fonctions</option>
+                        {% for code, libelle in fonctions %}
+                        <option value="{{ code }}" {% if fonction == code %}selected{% endif %}>{{ libelle }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="bi bi-funnel"></i> Filtrer</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead><tr><th>Nom & prénoms</th><th>Fonction</th><th>Qualification</th><th>Téléphone</th><th>Statut</th><th></th></tr></thead>
+                    <tbody>
+                        {% for membre in personnel %}
+                        <tr>
+                            <td class="fw-semibold">{{ membre.nom }} {{ membre.prenoms }}</td>
+                            <td><span class="badge badge-soft-primary">{{ membre.get_fonction_display }}</span></td>
+                            <td>{{ membre.qualification|default:"—" }}</td>
+                            <td>{{ membre.telephone|default:"—" }}</td>
+                            <td>{% if membre.actif %}<span class="badge badge-soft-success">Actif</span>{% else %}<span class="badge badge-soft-secondary">Inactif</span>{% endif %}</td>
+                            <td class="text-end">
+                                <a href="{% url 'personnel:modifier' membre.pk %}" class="btn btn-sm btn-outline-secondary" title="Modifier la fiche"><i class="bi bi-pencil"></i></a>
+                                {% if membre.fonction == 'ENSEIGNANT' %}
+                                <a href="{% url 'personnel:disponibilites' membre.pk %}" class="btn btn-sm btn-outline-info" title="Disponibilités IA"><i class="bi bi-calendar-check"></i></a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">Aucun membre du personnel.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if personnel.paginator.num_pages > 1 %}
+        <div class="card-footer"><nav>{% include "pagination.html" with page_obj=personnel %}</nav></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Réinscription en masse{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header">
+        <h1 class="mb-0"><i class="bi bi-arrow-repeat me-2 text-primary"></i>Réinscription en masse</h1>
+        <p class="text-muted mb-0 mt-1">Reconduire les dossiers d'une classe sur la nouvelle année, avec passage de classe suggéré (UC-12).</p>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-4"><label class="form-label">Année scolaire cible</label>{{ form.annee_cible }}</div>
+                <div class="col-md-4"><label class="form-label">Classe d'origine</label>{{ form.classe_source }}</div>
+                <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> Afficher</button></div>
+            </form>
+        </div>
+    </div>
+
+    {% if annee_cible %}
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="annee_cible" value="{{ annee_cible.pk }}">
+        <input type="hidden" name="confirmer" value="1">
+        <div class="card mt-3">
+            <div class="card-header fw-semibold">
+                Élèves de {{ classe_source.libelle }} à réinscrire en {{ annee_cible }}
+                ({{ eleves_a_reinscrire|length }} éligible(s))
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead><tr><th></th><th>Élève</th><th>Matricule</th><th>Décision fin d'année</th><th>Classe proposée</th><th>Classe choisie</th></tr></thead>
+                        <tbody>
+                            {% for item in eleves_a_reinscrire %}
+                            <tr>
+                                <td><input type="checkbox" name="eleves" value="{{ item.inscription.eleve.pk }}" class="form-check-input" checked></td>
+                                <td class="fw-semibold">{{ item.inscription.eleve.nom }} {{ item.inscription.eleve.prenoms }}</td>
+                                <td><span class="badge badge-soft-secondary font-monospace">{{ item.inscription.eleve.matricule }}</span></td>
+                                <td>{{ item.inscription.decision_fin_annee|default:"—" }}</td>
+                                <td>{% if item.suggeree %}<span class="badge badge-soft-primary">{{ item.suggeree.libelle }}</span>{% else %}<span class="badge badge-soft-warning">Aucune</span>{% endif %}</td>
+                                <td>
+                                    <select name="classe_{{ item.inscription.eleve.pk }}" class="form-select form-select-sm">
+                                        {% for classe in annee_cible.classes.all %}
+                                        <option value="{{ classe.pk }}" {% if item.suggeree and item.suggeree.pk == classe.pk %}selected{% endif %}>{{ classe.libelle }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">Tous les élèves de cette classe sont déjà réinscrits, ou la classe ne contient aucun élève actif.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if eleves_a_reinscrire %}
+            <div class="card-footer">
+                <button class="btn btn-primary"><i class="bi bi-arrow-repeat me-1"></i>Réinscrire la sélection</button>
+                <span class="small text-muted ms-2">L'échéancier de scolarité sera régénéré pour chaque élève réinscrit.</span>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

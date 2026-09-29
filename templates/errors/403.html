@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Accès refusé{% endblock %}
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-5 text-center">
+    <div class="py-5">
+        <h1 class="display-1 fw-bold text-danger">403</h1>
+        <h3 class="fw-semibold">Accès refusé</h3>
+        <p class="text-muted mx-auto" style="max-width:480px">Votre rôle ne vous autorise pas à accéder à cette page. Contactez l'administration si vous pensez qu'il s'agit d'une erreur.</p>
+        <a href="{% url 'accueil' %}" class="btn btn-primary mt-2"><i class="bi bi-house me-1"></i>Retour à l'accueil</a>
+    </div>
+</div>
+{% endblock %}

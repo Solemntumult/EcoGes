@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Annuler la facture {{ facture.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="page-header">
+                <h1 class="mb-0"><i class="bi bi-x-circle me-2 text-danger"></i>Annuler la facture {{ facture.numero }}</h1>
+                <p class="text-muted mb-0 mt-1">Montant : {{ facture.montant_total }} F — {{ facture.inscription.eleve }}</p>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Motif (avoir)</label>
+                            <textarea name="motif" class="form-control" rows="3" required placeholder="Ex. Facture erronée, annulation d'échéance..."></textarea>
+                        </div>
+                        <div class="alert alert-warning py-2 small">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Une facture émise ne peut pas être modifiée : elle ne peut qu'être annulée (avoir), conformément aux règles comptables.
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-danger px-4"><i class="bi bi-check-lg me-1"></i>Annuler (avoir)</button>
+                            <a href="{% url 'finances:compte_eleve' facture.inscription.pk %}" class="btn btn-outline-secondary">Retour</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}Emploi du temps — {{ classe.libelle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-calendar-week me-2 text-primary"></i>Emploi du temps — {{ classe.libelle }}</h1>
+            <p class="text-muted mb-0 mt-1">{{ classe.niveau }} · {{ classe.annee_scolaire }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            {% if peut_editer %}
+            <a href="{% url 'personnel:creer_creneau' %}" class="btn btn-outline-primary">
+                <i class="bi bi-plus-lg me-1"></i>Créneau libre
+            </a>
+            {% endif %}
+            <a href="{% url 'personnel:edt_par_classe' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Retour
+            </a>
+        </div>
+    </div>
+
+    {% if not horaire %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Aucun horaire actif. Définissez les horaires et pauses dans
+        <a href="{% url 'parametrage:horaires' %}">Paramétrage → Horaires scolaires</a>
+        pour activer l'éditeur de grille.
+    </div>
+    {% endif %}
+
+    {% if horaire %}
+    <div class="alert alert-light border d-flex flex-wrap align-items-center gap-2 mb-3 py-2">
+        <span class="badge text-bg-primary"><i class="bi bi-clock me-1"></i>{{ horaire.libelle }}</span>
+        <span class="small text-muted">
+            {{ horaire.heure_debut_journee|time:"H:i" }} – {{ horaire.heure_fin_journee|time:"H:i" }}
+        </span>
+        {% for pause in horaire.pauses.all %}
+        <span class="badge text-bg-warning bg-opacity-25 text-dark">
+            <i class="bi bi-cup-hot me-1"></i>{{ pause.libelle }} {{ pause.heure_debut|time:"H:i" }}–{{ pause.heure_fin|time:"H:i" }}
+        </span>
+        {% endfor %}
+        <span class="badge text-bg-info bg-opacity-25 text-dark">
+            <i class="bi bi-stopwatch me-1"></i>Créneaux de {{ horaire.duree_creneau_base }} min
+        </span>
+        {% if not peut_editer %}
+        <span class="small text-muted ms-auto"><i class="bi bi-eye me-1"></i>Consultation seule</span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if horaire %}
+    <form method="post" {% if not peut_editer %}onsubmit="return false;"{% endif %} novalidate>
+        {% csrf_token %}
+        <div class="card mb-3">
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-grid-3x3-gap me-1"></i>Grille des cours
+                    {% if peut_editer %}<span class="badge text-bg-light border">éditable — créneaux de {{ duree_base_minutes }} min</span>{% endif %}
+                </span>
+                
+                <div class="d-flex gap-2">
+                    {% if not mode_consultation %}
+                        <a href="?mode=consultation" class="btn btn-sm btn-outline-info"><i class="bi bi-eye me-1"></i>Mode consultation</a>
+                    {% else %}
+                        {% if 'ADMIN' in user.role or 'CENSEUR' in user.role or user.is_superuser %}
+                            <a href="?" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil me-1"></i>Mode édition</a>
+                        {% endif %}
+                    {% endif %}
+                    
+                    {% if peut_editer %}
+                    <a href="{% url 'personnel:generer_edt' classe.pk %}" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Attention : cela va écraser la grille actuelle avec une version générée automatiquement. Confirmer ?')">
+                        <i class="bi bi-magic me-1"></i>Générer (IA)
+                    </a>
+                    <button class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i>Enregistrer la grille</button>
+                    {% endif %}
+                    
+                    {% if 'ADMIN' in user.role or 'CENSEUR' in user.role or user.is_superuser %}
+                    <a href="{% url 'personnel:envoyer_edt' classe.pk %}" class="btn btn-sm btn-outline-success"><i class="bi bi-envelope me-1"></i>Diffuser aux parents</a>
+                    {% endif %}
+                </div>
+                
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:120px">Horaire</th>
+                                {% for jour in jours %}
+                                <th class="text-center">{{ jour }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ligne in grille %}
+                            <tr>
+                                <th class="fw-semibold small text-center align-middle">
+                                    {{ ligne.debut|time:"H:i" }}<br>
+                                    <span class="text-muted fw-normal">- {{ ligne.fin|time:"H:i" }}</span>
+                                </th>
+                                {% for cellule in ligne.cellules %}
+                                <td rowspan="{{ cellule.span }}" class="p-1 {% if cellule.creneau and cellule.span > 1 %}table-primary{% elif cellule.creneau %}bg-white{% endif %}" style="min-width:130px">
+                                    {% if peut_editer %}
+                                    <select name="cell_{{ cellule.jour }}_{{ cellule.idx }}" class="form-select form-select-sm mb-1">
+                                        <option value="">— vide —</option>
+                                        {% for aff in affectations %}
+                                        <option value="{{ aff.pk }}"
+                                            {% if cellule.affectation_id == aff.pk|stringformat:"s" %}selected{% endif %}>
+                                            {{ aff.matiere.libelle }} — {{ aff.personnel.prenoms|first }}. {{ aff.personnel.nom }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="d-flex gap-1">
+                                        <select name="duree_{{ cellule.jour }}_{{ cellule.idx }}" class="form-select form-select-sm" style="width:100px" title="Nombre d'heures">
+                                            {% for d in "123456789" %}
+                                            {% with d_int=forloop.counter %}
+                                            {% if d_int <= cellule.duree_max %}
+                                            <option value="{{ d_int }}"
+                                                {% if cellule.span == d_int %}selected{% endif %}>
+                                                {{ d_int }}h
+                                            </option>
+                                            {% endif %}
+                                            {% endwith %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    {% elif cellule.creneau %}
+                                    <div class="border-start border-4 border-primary ps-2">
+                                        {% if horaire.affichage_cellule == 'MATIERE_PROF' or horaire.affichage_cellule == 'MATIERE' %}
+                                        <div class="fw-semibold small">{{ cellule.creneau.affectation.matiere.libelle }}</div>
+                                        {% endif %}
+                                        {% if horaire.affichage_cellule == 'MATIERE_PROF' or horaire.affichage_cellule == 'PROFESSEUR' %}
+                                        <div class="small text-muted">{{ cellule.creneau.affectation.personnel.prenoms|first }}. {{ cellule.creneau.affectation.personnel.nom }}</div>
+                                        {% endif %}
+                                        <div class="small text-muted">
+                                            <span class="badge badge-soft-primary">{{ cellule.debut|time:"H:i" }} - {{ cellule.fin|time:"H:i" }}</span>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center text-muted small">—</div>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="{{ jours|length|add:1 }}" class="text-center text-muted py-4">
+                                Aucune plage horaire définie (vérifiez l'horaire actif).
+                            </td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if peut_editer %}
+            <div class="card-footer bg-white small text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                Chaque colonne = <strong>{{ duree_base_minutes }} min</strong> de cours. Choisissez le nombre de
+                <strong>créneaux</strong> pour qu'un cours occupe plusieurs colonnes d'affilée — la durée est
+                plafonnée à la plage avant la prochaine pause. La détection de conflits (enseignant / classe / salle
+                déjà occupés) bloque l'enregistrement en cas de chevauchement.
+            </div>
+            {% endif %}
+        </div>
+    </form>
+    {% endif %}
+
+    {% if quotas %}
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">
+            <i class="bi bi-bar-chart me-1"></i>Suivi des quotas horaires
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 small">
+                    <thead class="table-light">
+                        <tr><th>Matière</th><th class="text-center">Planifié</th><th class="text-center">Quota</th><th class="text-center">État</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for q in quotas %}
+                        <tr>
+                            <td>{{ q.matiere }}</td>
+                            <td class="text-center">{{ q.heures_planifiees }}h</td>
+                            <td class="text-center">{% if q.quota %}{{ q.quota }}h/sem{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                            <td class="text-center">
+                                {% if q.depasse %}
+                                <span class="badge text-bg-danger">🔴 Dépassé</span>
+                                {% elif q.atteint %}
+                                <span class="badge text-bg-success">✅ Atteint</span>
+                                {% elif q.quota %}
+                                <span class="badge text-bg-warning">🟡 En cours</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if autres %}
+    <div class="card mb-3">
+        <div class="card-header fw-semibold"><i class="bi bi-list-check me-1"></i>Créneaux hors grille standard ({{ autres|length }})</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>Jour</th><th>Horaires</th><th>Durée</th><th>Matière</th><th>Enseignant</th><th>Salle</th>
+                            {% if peut_editer %}<th style="width:150px"></th>{% endif %}</tr>
+                    </thead>
+                    <tbody>
+                        {% for creneau in autres %}
+                        <tr>
+                            <td>{{ creneau.get_jour_display }}</td>
+                            <td>{{ creneau.heure_debut|time:"H:i" }}–{{ creneau.heure_fin|time:"H:i" }}</td>
+                            <td>{{ creneau.duree_heures }} h</td>
+                            <td>{{ creneau.affectation.matiere.libelle }}</td>
+                            <td>{{ creneau.affectation.personnel.nom }} {{ creneau.affectation.personnel.prenoms }}</td>
+                            <td>{{ creneau.salle|default:"—" }}</td>
+                            {% if peut_editer %}
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a href="{% url 'personnel:modifier_creneau' creneau.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                    <form method="post" action="{% url 'personnel:supprimer_creneau' creneau.pk %}" class="m-0"
+                                          onsubmit="return confirm('Supprimer ce créneau ?');">
+                                        {% csrf_token %}
+                                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not horaire and not autres %}
+    <div class="card">
+        <div class="card-body text-center text-muted py-4">Aucun créneau défini pour cette classe.</div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if peut_editer %}
+<script>
+(function() {
+    // Autocomplete filter for affectation selects
+    document.querySelectorAll('select[name^="cell_"]').forEach(function(select) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'position-relative';
+        select.parentNode.insertBefore(wrapper, select);
+        wrapper.appendChild(select);
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control form-control-sm mb-1';
+        input.placeholder = 'Rechercher...';
+        input.style.display = 'none';
+        wrapper.insertBefore(input, select);
+
+        var options = Array.from(select.options);
+
+        select.addEventListener('focus', function() {
+            input.style.display = '';
+            input.focus();
+        });
+
+        input.addEventListener('input', function() {
+            var terme = this.value.toLowerCase();
+            select.innerHTML = '';
+            options.forEach(function(opt) {
+                if (!terme || opt.value === '' || opt.text.toLowerCase().indexOf(terme) !== -1) {
+                    select.appendChild(opt.cloneNode(true));
+                }
+            });
+        });
+
+        input.addEventListener('blur', function() {
+            var self = this;
+            setTimeout(function() { self.style.display = 'none'; }, 200);
+        });
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                this.style.display = 'none';
+                this.value = '';
+                select.innerHTML = '';
+                options.forEach(function(opt) { select.appendChild(opt.cloneNode(true)); });
+            }
+        });
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

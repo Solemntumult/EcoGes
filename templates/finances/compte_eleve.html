@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Compte — {{ inscription.eleve }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-wallet2 me-2 text-primary"></i>Compte — {{ inscription.eleve.nom }} {{ inscription.eleve.prenoms }}</h1>
+            <p class="text-muted mb-0 mt-1">{{ inscription.classe.libelle }} · {{ inscription.annee_scolaire }} · {{ inscription.eleve.matricule }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'finances:emettre_facture' inscription.pk %}" class="btn btn-outline-primary"><i class="bi bi-receipt me-1"></i>Émettre une facture</a>
+            <a href="{% url 'finances:encaisser' %}?inscription={{ inscription.pk }}" class="btn btn-success"><i class="bi bi-cash-coin me-1"></i>Encaisser</a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4"><div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-cash-coin"></i></div>
+            <div><div class="stat-valeur">{{ situation.total_du }} F</div><div class="stat-libelle">Total dû</div></div></div></div></div>
+        <div class="col-md-4"><div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+            <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+            <div><div class="stat-valeur">{{ situation.total_paye }} F</div><div class="stat-libelle">Total payé</div></div></div></div></div>
+        <div class="col-md-4"><div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+            <div class="stat-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-exclamation-circle"></i></div>
+            <div><div class="stat-valeur">{{ situation.solde }} F</div><div class="stat-libelle">Solde restant</div></div></div></div></div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header fw-semibold">Échéancier</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0 align-middle">
+                    <thead><tr><th>Échéance</th><th>Type</th><th>Dû</th><th>Payé</th><th>Solde</th><th>Date</th><th>Statut</th></tr></thead>
+                    <tbody>
+                        {% for echeance in echeances %}
+                        <tr>
+                            <td>{{ echeance.libelle }}</td>
+                            <td>{{ echeance.type_frais }}</td>
+                            <td>{{ echeance.montant_du }} F</td>
+                            <td class="text-success">{{ echeance.montant_paye }} F</td>
+                            <td><strong>{{ echeance.solde }} F</strong></td>
+                            <td>{{ echeance.date_echeance|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if echeance.statut == 'PAYE' %}<span class="badge badge-soft-success">Payé</span>
+                                {% elif echeance.statut == 'PARTIEL' %}<span class="badge badge-soft-warning">Partiel</span>
+                                {% else %}<span class="badge badge-soft-danger">Impayé</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header fw-semibold">Historique des paiements</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0 align-middle">
+                    <thead><tr><th>Date</th><th>Montant</th><th>Mode</th><th>Référence</th><th>Encaissé par</th><th>Reçu</th><th>Statut</th><th></th></tr></thead>
+                    <tbody>
+                        {% for paiement in paiements %}
+                        <tr>
+                            <td>{{ paiement.date_paiement|date:"d/m/Y H:i" }}</td>
+                            <td><strong>{{ paiement.montant }} F</strong></td>
+                            <td>{{ paiement.get_mode_paiement_display }}</td>
+                            <td>{{ paiement.reference|default:"—" }}</td>
+                            <td>{{ paiement.encaisse_par.get_full_name|default:paiement.encaisse_par|default:"—" }}</td>
+                            <td>
+                                {% if paiement.recu %}
+                                <a href="{% url 'finances:recu' paiement.recu.pk %}" class="btn btn-sm btn-outline-primary" target="_blank"><i class="bi bi-receipt"></i></a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if paiement.statut == 'VALIDE' %}<span class="badge badge-soft-success">Validé</span>
+                                {% elif paiement.statut == 'ANNULE' %}<span class="badge badge-soft-danger">Annulé</span>
+                                {% else %}<span class="badge badge-soft-secondary">Remboursé</span>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if paiement.statut == 'VALIDE' %}
+                                <a href="{% url 'finances:annuler_paiement' paiement.pk %}" class="btn btn-sm btn-outline-danger" title="Annuler / rembourser"><i class="bi bi-x-circle"></i></a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if factures %}
+    <div class="card mt-3">
+        <div class="card-header fw-semibold">Factures</div>
+        <div class="card-body p-0">
+            <table class="table mb-0 align-middle">
+                <thead><tr><th>N°</th><th>Date</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
+                <tbody>
+                    {% for facture in factures %}
+                    <tr>
+                        <td class="font-monospace">{{ facture.numero }}</td>
+                        <td>{{ facture.date_emission|date:"d/m/Y" }}</td>
+                        <td>{{ facture.montant_total }} F</td>
+                        <td>
+                            {% if facture.statut == 'EMISE' %}<span class="badge badge-soft-warning">Émise</span>
+                            {% elif facture.statut == 'SOLDEE' %}<span class="badge badge-soft-success">Soldée</span>
+                            {% else %}<span class="badge badge-soft-danger">Annulée</span>{% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'finances:facture_pdf' facture.pk %}" class="btn btn-sm btn-outline-primary" target="_blank"><i class="bi bi-file-pdf"></i></a>
+                            {% if facture.statut == 'EMISE' %}
+                            <a href="{% url 'finances:annuler_facture' facture.pk %}" class="btn btn-sm btn-outline-danger" title="Annuler (avoir)"><i class="bi bi-x-circle"></i></a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

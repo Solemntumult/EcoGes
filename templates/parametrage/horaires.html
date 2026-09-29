@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Horaires scolaires{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Horaires scolaires</h1>
+            <p class="text-muted mb-0 mt-1">
+                Définissez les modes d'horaire de l'établissement (journée continue 7h–15h35, journée coupée 7h30–18h30...)
+                et les pauses (récréation, déjeuner) — l'horaire actif s'applique à toutes les classes.
+            </p>
+        </div>
+        <a href="{% url 'parametrage:horaire_creer' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Nouveau mode d'horaire
+        </a>
+    </div>
+
+    {% if not actif %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Aucun horaire n'est actif : l'éditeur d'emploi du temps affichera un avertissement.
+        Activez un mode ci-dessous.
+    </div>
+    {% endif %}
+
+    <div class="row g-3">
+        {% for horaire in horaires %}
+        <div class="col-md-6 col-xl-4">
+            <div class="card h-100 {% if horaire.actif %}border-primary{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="mb-1">
+                            <i class="bi bi-calendar-range me-1 text-primary"></i>{{ horaire.libelle }}
+                        </h5>
+                        {% if horaire.actif %}
+                        <span class="badge text-bg-success"><i class="bi bi-check-circle me-1"></i>Actif</span>
+                        {% endif %}
+                    </div>
+                    <div class="small text-muted mb-1">
+                        <i class="bi bi-sun me-1"></i>{{ horaire.heure_debut_journee|time:"H:i" }} – {{ horaire.heure_fin_journee|time:"H:i" }}
+                    </div>
+                    <div class="small text-muted mb-2">
+                        <i class="bi bi-stopwatch me-1"></i>Créneaux de {{ horaire.duree_creneau_base }} min
+                    </div>
+                    {% if horaire.pauses.all %}
+                    <ul class="list-group list-group-flush small mb-3">
+                        {% for pause in horaire.pauses.all %}
+                        <li class="list-group-item px-0 py-1 d-flex justify-content-between">
+                            <span><i class="bi bi-cup-hot me-1 text-warning"></i>{{ pause.libelle }}</span>
+                            <span class="text-muted">{{ pause.heure_debut|time:"H:i" }}–{{ pause.heure_fin|time:"H:i" }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="small text-muted">Aucune pause définie.</p>
+                    {% endif %}
+                    <div class="small text-muted mb-3">
+                        <strong>{{ horaire.segments|length }}</strong> plages de cours par jour
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if not horaire.actif %}
+                        <form method="post" action="{% url 'parametrage:horaires' %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="activer" value="{{ horaire.pk }}">
+                            <button class="btn btn-sm btn-success"><i class="bi bi-play-fill me-1"></i>Appliquer</button>
+                        </form>
+                        {% endif %}
+                        <a href="{% url 'parametrage:horaire_editer' horaire.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil me-1"></i>Modifier
+                        </a>
+                        <form method="post" action="{% url 'parametrage:horaire_supprimer' horaire.pk %}"
+                              onsubmit="return confirm('Supprimer ce mode d\\'horaire ?');" class="m-0">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Supprimer</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info"><i class="bi bi-info-circle me-1"></i>Aucun horaire défini — créez-en un.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

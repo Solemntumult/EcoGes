@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Quotas horaires — {{ classe.libelle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-bar-chart me-2 text-primary"></i>Quotas horaires — {{ classe.libelle }}</h1>
+            <p class="text-muted mb-0 mt-1">Définissez le nombre d'heures de cours par semaine pour chaque matière de cette classe.</p>
+        </div>
+        <a href="{% url 'parametrage:classe_matieres' classe.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Retour aux matières
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-list-check me-1"></i>Quotas définis</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr><th>Matière</th><th class="text-center">Heures / semaine</th><th style="width:80px"></th></tr>
+                            </thead>
+                            <tbody>
+                                {% for quota in quotas %}
+                                <tr>
+                                    <td>{{ quota.matiere.libelle }}</td>
+                                    <td class="text-center">{{ quota.heures_par_semaine }}h</td>
+                                    <td>
+                                        <form method="post" class="m-0" onsubmit="return confirm('Supprimer ce quota ?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="supprimer">
+                                            <input type="hidden" name="quota_pk" value="{{ quota.pk }}">
+                                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="3" class="text-center text-muted py-4">Aucun quota défini pour cette classe.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-plus-circle me-1"></i>Ajouter un quota</div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Matière</label>
+                            {{ form.matiere }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Heures par semaine</label>
+                            {{ form.heures_par_semaine }}
+                        </div>
+                        {% if form.errors %}
+                        <div class="alert alert-danger py-2">{{ form.errors }}</div>
+                        {% endif %}
+                        <button class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Enregistrer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

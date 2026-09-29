@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load filtres %}
+{% block title %}États de caisse{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-cash-stack me-2 text-primary"></i>États de caisse</h1>
+            <p class="text-muted mb-0 mt-1">Synthèse journalière ou sur période, exportable en Excel (UC-32).</p>
+        </div>
+        <div class="d-flex gap-2">
+            <form method="get" action="{% url 'finances:export_caisse' %}" class="d-flex gap-2">
+                <input type="date" name="jour" value="{{ jour|default:'' }}" class="form-control form-control-sm">
+                <button class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel me-1"></i>Exporter Excel</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">{{ form.date_debut }}</div>
+                <div class="col-md-3">{{ form.date_fin }}</div>
+                <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="bi bi-funnel"></i> Générer</button></div>
+                {% if date_debut %}
+                <div class="col-md-4">
+                    <a href="{% url 'finances:export_caisse' %}?date_debut={{ date_debut|date:'Y-m-d' }}&date_fin={{ date_fin|date:'Y-m-d' }}" class="btn btn-outline-success">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Exporter la période en Excel
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    {% if total is not None %}
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-cash-stack"></i></div>
+                <div><div class="stat-valeur">{{ total }} F</div>
+                    <div class="stat-libelle">{% if jour %}Encaissements du {{ jour }}{% else %}Période {{ date_debut|date:"d/m/Y" }} → {{ date_fin|date:"d/m/Y" }}{% endif %}</div></div>
+            </div></div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header fw-semibold">Répartition par mode de paiement</div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for ligne in par_mode %}
+                        <span class="badge badge-soft-primary p-2">
+                            {{ modele|get_item:ligne.mode_paiement }} : <strong>{{ ligne.total }} F</strong>
+                        </span>
+                        {% empty %}
+                        <span class="text-muted">Aucun encaissement sur cette période.</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if paiements %}
+    <div class="card mt-3">
+        <div class="card-header fw-semibold">Détail des encaissements ({{ paiements|length }})</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Date</th><th>Élève</th><th>Montant</th><th>Mode</th><th>Encaissé par</th></tr></thead>
+                    <tbody>
+                        {% for paiement in paiements %}
+                        <tr>
+                            <td>{{ paiement.date_paiement|date:"d/m/Y H:i" }}</td>
+                            <td>{{ paiement.inscription.eleve }}</td>
+                            <td><strong>{{ paiement.montant }} F</strong></td>
+                            <td>{{ paiement.get_mode_paiement_display }}</td>
+                            <td>{{ paiement.encaisse_par|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% elif jour %}
+    <div class="alert alert-info mt-3">Aucun encaissement validé pour cette journée.</div>
+    {% endif %}
+</div>
+{% endblock %}

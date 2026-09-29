@@ -1,0 +1,14 @@
+{% comment %}
+Bande républicaine officielle (Bénin) — République, ministère de tutelle, devise.
+Usage : {% include "documents/_bande_republic.html" with petit=1 %}
+Le paramètre « petit » réduit la taille (cartes scolaires, reçus compacts).
+{% endcomment %}
+{% if etab.ministere_tutelle or petit %}
+<div class="bande-republicaine" style="text-align:center; margin-bottom:6px;{% if petit %} font-size:7px;{% endif %}">
+    <div style="font-weight:800; letter-spacing:2px; {% if petit %}font-size:8px;{% else %}font-size:13px;{% endif %}">RÉPUBLIQUE DU BÉNIN</div>
+    {% if etab.ministere_tutelle %}
+    <div style="text-transform:uppercase; {% if petit %}font-size:6px;{% else %}font-size:8px;{% endif %} color:#475569; line-height:1.4;">{{ etab.ministere_tutelle }}</div>
+    {% endif %}
+    <div style="font-style:italic; {% if petit %}font-size:6px;{% else %}font-size:8px;{% endif %} color:#64748b;">Fraternité – Justice – Travail</div>
+</div>
+{% endif %}

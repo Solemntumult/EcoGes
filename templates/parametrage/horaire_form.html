@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{% if instance %}Modifier{% else %}Créer{% endif %} un horaire{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="page-header">
+                <h1 class="mb-0">
+                    <i class="bi bi-clock-history me-2 text-primary"></i>
+                    {% if instance %}Modifier{% else %}Créer{% endif %} un mode d'horaire
+                </h1>
+                <p class="text-muted mb-0 mt-1">
+                    Horaires de début/fin de journée + pauses. Les plages de cours sont calculées
+                    automatiquement entre les pauses (ex. 7h00–10h00, 10h15–12h00, 13h00–15h35).
+                </p>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="card mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-calendar-range me-1"></i>Journée</div>
+                    <div class="card-body">
+                        <div class="mb-3"><label class="form-label">Nom du mode</label>{{ form.libelle }}</div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">Début des cours</label>{{ form.heure_debut_journee }}</div>
+                            <div class="col-md-6"><label class="form-label">Fin des cours</label>{{ form.heure_fin_journee }}</div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label">Durée d'un créneau de base</label>
+                                {{ form.duree_creneau_base }}
+                                <div class="form-text">En minutes (ex. 45, 55, 60). Détermine le quadrillage de la grille d'emploi du temps.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Affichage dans les cellules</label>
+                                {{ form.affichage_cellule }}
+                                <div class="form-text">Contenu visible dans chaque case de cours de l'emploi du temps.</div>
+                            </div>
+                        </div>
+                        <div class="form-check mt-3">
+                            {{ form.actif }}
+                            <label class="form-check-label" for="{{ form.actif.id_for_label }}">Horaire actif (appliqué à toutes les classes)</label>
+                        </div>
+                        {% if form.errors %}
+                        <div class="alert alert-danger py-2 mt-3 mb-0">{{ form.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-cup-hot me-1"></i>Pauses (récréation, déjeuner...)</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="ajouterPause()">
+                            <i class="bi bi-plus-lg me-1"></i>Ajouter une pause
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {{ formset.management_form }}
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                                <tr><th style="width:34%">Libellé</th><th>Début</th><th>Fin</th><th style="width:50px"></th></tr>
+                            </thead>
+                            <tbody id="pauses">
+                                {% for f in formset %}
+                                <tr class="pause-ligne">
+                                    <td>{{ f.id }}{{ f.libelle }}</td>
+                                    <td>{{ f.heure_debut }}</td>
+                                    <td>{{ f.heure_fin }}</td>
+                                    <td class="text-center">
+                                        {% if formset.can_delete %}{{ f.DELETE }}{% endif %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="supprimerPause(this)">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <p class="small text-muted mt-2 mb-0">
+                            Cochez la case de suppression puis « Enregistrer » pour retirer une pause.
+                        </p>
+                    </div>
+                </div>
+
+                {% if formset.non_form_errors %}
+                <div class="alert alert-danger py-2">{{ formset.non_form_errors }}</div>
+                {% endif %}
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary px-4"><i class="bi bi-check-lg me-1"></i>Enregistrer</button>
+                    <a href="{% url 'parametrage:horaires' %}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var compteur = parseInt(document.getElementById("id_pauses-TOTAL_FORMS").value, 10) || 0;
+
+    window.ajouterPause = function () {
+        var template = document.getElementById("pause-modele");
+        var ligne = template.cloneNode(true);
+        ligne.removeAttribute("id");
+        ligne.style.display = "";
+        // Renumérotation des champs (les champs vierges sont préfixés __prefix__)
+        ligne.querySelectorAll("[name]").forEach(function (input) {
+            var nom = input.name.replace(/__prefix__/g, compteur);
+            input.name = nom;
+            input.id = nom;
+            if (input.type === "checkbox") input.checked = false;
+            else input.value = "";
+        });
+        document.getElementById("pauses").appendChild(ligne);
+        compteur++;
+        document.getElementById("id_pauses-TOTAL_FORMS").value = compteur;
+    };
+
+    window.supprimerPause = function (bouton) {
+        var ligne = bouton.closest("tr");
+        var caseSuppr = ligne.querySelector("input[type='checkbox']");
+        if (caseSuppr) { caseSuppr.checked = true; ligne.style.opacity = "0.5"; }
+        else ligne.remove();
+    };
+})();
+</script>
+
+<template id="pause-modele">
+    <tr class="pause-ligne" style="display:none">
+        <td>{{ formset.empty_form.id }}{{ formset.empty_form.libelle }}</td>
+        <td>{{ formset.empty_form.heure_debut }}</td>
+        <td>{{ formset.empty_form.heure_fin }}</td>
+        <td class="text-center">
+            {% if formset.can_delete %}{{ formset.empty_form.DELETE }}{% endif %}
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="supprimerPause(this)">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+{% endblock %}

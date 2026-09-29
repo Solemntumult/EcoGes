@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Nouvelle évaluation{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="page-header">
+                <h1 class="mb-0"><i class="bi bi-plus-square me-2 text-primary"></i>Nouvelle évaluation</h1>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3"><label class="form-label">Matière</label>{{ form.matiere }}</div>
+                        <div class="mb-3"><label class="form-label">Classe</label>{{ form.classe }}</div>
+                        <div class="mb-3"><label class="form-label">Période</label>{{ form.periode }}</div>
+                        <div class="row g-3">
+                            <div class="col-md-4"><label class="form-label">Type</label>{{ form.type_evaluation }}</div>
+                            <div class="col-md-4"><label class="form-label">Coefficient</label>{{ form.coefficient }}</div>
+                            <div class="col-md-4"><label class="form-label">Date</label>{{ form.date }}</div>
+                        </div>
+                        <div class="d-flex gap-2 mt-4">
+                            <button class="btn btn-primary px-4"><i class="bi bi-check-lg me-1"></i>Créer</button>
+                            <a href="{% url 'evaluations:mes_evaluations' %}" class="btn btn-outline-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Impayés & relances{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-exclamation-octagon me-2 text-danger"></i>Impayés & relances</h1>
+            <p class="text-muted mb-0 mt-1">Échéances non soldées — total dû : <strong>{{ total_due }} F</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'finances:etats_caisse' %}" class="btn btn-outline-primary"><i class="bi bi-cash-stack me-1"></i>États de caisse</a>
+            <a href="{% url 'finances:encaisser' %}" class="btn btn-success"><i class="bi bi-cash-coin me-1"></i>Encaisser</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead><tr><th>Élève</th><th>Échéance</th><th>Montant dû</th><th>Payé</th><th>Solde</th><th>Échéance le</th><th>Retard</th><th>Statut</th><th></th></tr></thead>
+                    <tbody>
+                        {% for echeance in echeances %}
+                        <tr>
+                            <td class="fw-semibold">{{ echeance.inscription.eleve.nom }} {{ echeance.inscription.eleve.prenoms }}</td>
+                            <td>{{ echeance.libelle }}</td>
+                            <td>{{ echeance.montant_du }} F</td>
+                            <td class="text-success">{{ echeance.montant_paye }} F</td>
+                            <td><strong>{{ echeance.solde }} F</strong></td>
+                            <td>{{ echeance.date_echeance|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if echeance.date_echeance < aujourdhui %}
+                                <span class="badge badge-soft-danger">{{ echeance.date_echeance|timesince }} de retard</span>
+                                {% else %}
+                                <span class="badge badge-soft-secondary">à échoir</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if echeance.statut == 'PARTIEL' %}<span class="badge badge-soft-warning">Partiel</span>
+                                {% else %}<span class="badge badge-soft-danger">Impayé</span>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'finances:compte_eleve' echeance.inscription.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-wallet2"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="9" class="text-center text-success py-4"><i class="bi bi-check-circle"></i> Aucun impayé — félicitations !</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if echeances.paginator.num_pages > 1 %}
+        <div class="card-footer"><nav>{% include "pagination.html" with page_obj=echeances %}</nav></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Statistiques & tableau de bord{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-bar-chart me-2 text-primary"></i>Statistiques & pilotage</h1>
+            <p class="text-muted mb-0 mt-1">Effectifs, recouvrement et résultats (UC-40, UC-41).</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'statistiques:export_excel' %}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
+            <a href="{% url 'statistiques:export_pdf' %}" class="btn btn-outline-primary" target="_blank"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-people-fill"></i></div>
+                <div><div class="stat-valeur">{{ total_effectifs }}</div><div class="stat-libelle">Élèves actifs</div></div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-piggy-bank-fill"></i></div>
+                <div><div class="stat-valeur">{{ recouvrement.taux }}%</div><div class="stat-libelle">Taux de recouvrement</div></div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-wallet2"></i></div>
+                <div><div class="stat-valeur">{{ recouvrement.total_paye }} F</div><div class="stat-libelle">Encaissé au total</div></div>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header fw-semibold">Effectifs par classe</div>
+                <div class="card-body"><canvas id="chartEffectifs" height="220"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header fw-semibold">Recettes par mois (12 derniers mois)</div>
+                <div class="card-body"><canvas id="chartRecettes" height="220"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header fw-semibold">Évolution des effectifs par année</div>
+                <div class="card-body"><canvas id="chartEvolution" height="220"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header fw-semibold">Moyenne générale par classe (période en cours)</div>
+                <div class="card-body"><canvas id="chartMoyennes" height="220"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header fw-semibold">Effectifs par cycle et par sexe</div>
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead><tr><th>Cycle</th><th>Garçons</th><th>Filles</th><th>Total</th></tr></thead>
+                        <tbody>
+                            {% for ligne in effectifs_cycles %}
+                            <tr><td>{{ ligne.cycle }}</td><td>{{ ligne.hommes }}</td><td>{{ ligne.femmes }}</td><td><strong>{{ ligne.total }}</strong></td></tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">Aucune donnée.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header fw-semibold">Recouvrement</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between border-bottom py-2"><span class="text-muted">Total dû</span><strong>{{ recouvrement.total_du }} F</strong></div>
+                    <div class="d-flex justify-content-between border-bottom py-2"><span class="text-muted">Total payé</span><strong class="text-success">{{ recouvrement.total_paye }} F</strong></div>
+                    <div class="d-flex justify-content-between py-2"><span class="text-muted">Reste à recouvrer</span><strong class="text-danger">{{ recouvrement.reste_du }} F</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    Chart.defaults.font.family = '"Segoe UI", system-ui, sans-serif';
+    Chart.defaults.color = '#64748b';
+
+    const effectifs = {{ effectifs_json|safe }};
+    new Chart(document.getElementById('chartEffectifs'), {
+        type: 'bar',
+        data: { labels: effectifs.map(e => e.libelle), datasets: [{ label: 'Élèves', data: effectifs.map(e => e.effectif), backgroundColor: '#1d4ed8' }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    const recettes = {{ recettes_json|safe }};
+    new Chart(document.getElementById('chartRecettes'), {
+        type: 'line',
+        data: { labels: recettes.map(r => r.mois), datasets: [{ label: 'Encaissements (F)', data: recettes.map(r => r.total), borderColor: '#15803d', backgroundColor: 'rgba(21,128,61,.12)', fill: true, tension: .3 }] },
+        options: { responsive: true }
+    });
+
+    const evolution = {{ evolution_json|safe }};
+    new Chart(document.getElementById('chartEvolution'), {
+        type: 'bar',
+        data: { labels: evolution.map(e => e.annee), datasets: [{ label: 'Inscrits', data: evolution.map(e => e.effectif), backgroundColor: '#7c3aed' }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    const moyennes = {{ moyennes_json|safe }};
+    new Chart(document.getElementById('chartMoyennes'), {
+        type: 'bar',
+        data: { labels: moyennes.map(m => m.libelle), datasets: [{ label: 'Moyenne générale', data: moyennes.map(m => m.moyenne), backgroundColor: '#d97706' }] },
+        options: { responsive: true, scales: { y: { min: 0, max: 20 } }, plugins: { legend: { display: false } } }
+    });
+</script>
+{% endblock %}

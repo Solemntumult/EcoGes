@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Documents administratifs{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-files me-2 text-primary"></i>Documents administratifs</h1>
+            <p class="text-muted mb-0 mt-1">
+                {% if eleve_cible %}Génération pour <strong>{{ eleve_cible.nom }} {{ eleve_cible.prenoms }}</strong>{% else %}
+                Certificats, attestations, cartes scolaires — générés à partir des modèles personnalisables (UC-35 à UC-39).{% endif %}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'documents:editeur' %}" class="btn btn-primary"><i class="bi bi-pencil-square me-1"></i>Éditeur + aperçu</a>
+            <a href="{% url 'documents:historique' %}" class="btn btn-outline-secondary"><i class="bi bi-clock-history me-1"></i>Historique</a>
+            <a href="{% url 'documents:liste_classe' %}" class="btn btn-outline-primary"><i class="bi bi-list-ul me-1"></i>Liste de classe</a>
+            <a href="{% url 'documents:courrier' %}" class="btn btn-outline-primary"><i class="bi bi-envelope me-1"></i>Courriers</a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-file-earmark-plus me-1"></i>Générer un document</div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'documents:generer' %}" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3"><label class="form-label">Élève</label>{{ form.eleve }}</div>
+                        <div class="mb-3"><label class="form-label">Type de document</label>{{ form.type_document }}</div>
+                        {% if form.non_field_errors %}<div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>{% endif %}
+                        <button class="btn btn-primary w-100"><i class="bi bi-file-earmark-pdf me-1"></i>Générer le PDF</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-clock-history me-1"></i>Derniers documents émis</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead><tr><th>Type</th><th>Élève</th><th>Date</th><th>Généré par</th></tr></thead>
+                            <tbody>
+                                {% for doc in historique %}
+                                <tr>
+                                    <td><span class="badge badge-soft-primary">{{ doc.get_type_document_display }}</span></td>
+                                    <td>{{ doc.eleve|default:"—" }}</td>
+                                    <td>{{ doc.date_generation|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ doc.genere_par.get_full_name|default:doc.genere_par|default:"—" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted py-4">Aucun document généré pour l'instant.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

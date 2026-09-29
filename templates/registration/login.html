@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Connexion{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="card login-card">
+        <div class="card-header">
+            <div class="mb-2">
+                <span class="badge bg-primary rounded-3 p-3"><i class="bi bi-mortarboard-fill fs-4"></i></span>
+            </div>
+            <h4 class="fw-bold mb-1">Gestion Scolaire</h4>
+            <p class="text-muted mb-0 small">Plateforme intégrée de gestion d'établissement</p>
+        </div>
+        <div class="card-body">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-danger py-2 small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>{{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Identifiant</label>
+                    <input type="text" name="username" class="form-control" placeholder="Votre identifiant" required autofocus>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mot de passe</label>
+                    <input type="password" name="password" class="form-control" placeholder="Votre mot de passe" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Se connecter
+                </button>
+            </form>
+            <div class="text-center mt-3">
+                <a href="{% url 'mot_de_passe' %}" class="small text-decoration-none">Mot de passe oublié ?</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

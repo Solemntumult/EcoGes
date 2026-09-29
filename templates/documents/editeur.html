@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Éditeur de documents{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">                <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>Éditeur de documents</h1>
+            <p class="text-muted mb-0 mt-1">
+                Modifiez le contenu à gauche — l'aperçu temps réel se met à jour à droite.
+                Exportez ensuite en <strong>PDF</strong>, <strong>Word (.docx)</strong>, <strong>HTML</strong>
+                ou <strong>envoyez-le par e-mail</strong>.
+            </p>
+        </div>
+        <a href="{% url 'documents:accueil' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Accueil documents</a>
+    </div>
+
+    <div class="alert alert-info py-2 small">
+        <i class="bi bi-info-circle me-1"></i>
+        Variables disponibles : <code>{{ variables_aide }}</code>.
+        Choisissez un élève pour les remplir automatiquement ; les variables inconnues restent telles quelles.
+    </div>
+
+    <form method="post" action="{% url 'documents:exporter' %}" id="formEditeur">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header fw-semibold"><i class="bi bi-pencil me-1"></i>Édition</div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Type de document</label>
+                                <select name="type_document" id="typeDocument" class="form-select">
+                                    {% for code, libelle in types %}
+                                    <option value="{{ code }}" {% if code == type_initial %}selected{% endif %}>{{ libelle }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Élève (variables auto)</label>
+                                <select name="eleve" id="selectEleve" class="form-select">
+                                    <option value="">— Document générique —</option>
+                                    {% for eleve in eleves %}
+                                    <option value="{{ eleve.pk }}" {% if eleve.pk|stringformat:"s" == eleve_selectionne %}selected{% endif %}>
+                                        {{ eleve.nom }} {{ eleve.prenoms }} ({{ eleve.matricule }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Contenu du document (HTML autorisé)</label>
+                            <textarea name="contenu" id="contenu" class="form-control font-monospace"
+                                      rows="20" style="font-size:.85rem">{{ contenu_initial }}</textarea>
+                        </div>
+                        <div class="mt-3 d-flex gap-2 flex-wrap">
+                            <button class="btn btn-primary" name="format" value="pdf">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>Exporter PDF
+                            </button>
+                            <button class="btn btn-success" name="format" value="docx">
+                                <i class="bi bi-file-earmark-word me-1"></i>Exporter Word
+                            </button>
+                            <button class="btn btn-outline-secondary" name="format" value="html">
+                                <i class="bi bi-file-code me-1"></i>Exporter HTML
+                            </button>
+                        </div>
+                        <hr>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-7">
+                                <label class="form-label" for="destinataire">
+                                    <i class="bi bi-envelope-paper me-1"></i>Envoyer par e-mail à
+                                    <span class="text-muted fw-normal">(pré-rempli avec l'e-mail du tuteur si un élève est choisi)</span>
+                                </label>
+                                <input type="email" name="destinataire" id="destinataire" class="form-control"
+                                       placeholder="parent@exemple.com" value="{{ destinataire_initial }}">
+                            </div>
+                            <div class="col-md-5">
+                                <button class="btn btn-info w-100" name="format" value="email" id="btnEmail">
+                                    <i class="bi bi-send me-1"></i>Envoyer par e-mail
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card sticky-top" style="top:1rem">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold"><i class="bi bi-eye me-1"></i>Aperçu temps réel</span>
+                        <span class="badge badge-soft-primary">Format A4</span>
+                    </div>
+                    <div class="card-body bg-light p-2">
+                        <iframe id="apercu" class="w-100 border-0" style="height:660px;background:#fff;border-radius:.5rem"
+                                title="Aperçu du document"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ donnees_json|json_script:"donnees" }}
+{{ titres_json|json_script:"titres" }}
+{{ mentions_json|json_script:"mentions" }}
+{{ en_tete_json|json_script:"en_tete" }}
+{{ etab_json|json_script:"etab" }}
+<script>
+    const donnees = JSON.parse(document.getElementById('donnees').textContent);
+    const titres = JSON.parse(document.getElementById('titres').textContent);
+    const mentions = JSON.parse(document.getElementById('mentions').textContent);
+    const enTete = JSON.parse(document.getElementById('en_tete').textContent);
+    const etab = JSON.parse(document.getElementById('etab').textContent);
+
+    const textarea = document.getElementById('contenu');
+    const cleStockage = 'editeur_contenu_' + document.getElementById('typeDocument').value + '_' + document.getElementById('selectEleve').value;
+
+    // Restaure le contenu en cours d'édition (conservé entre les changements type/élève)
+    const sauvegarde = localStorage.getItem(cleStockage);
+    if (sauvegarde !== null) textarea.value = sauvegarde;
+
+    function remplacerVariables(chaine) {
+        return chaine.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, cle) => (cle in donnees ? donnees[cle] : m));
+    }
+
+    function construireApercu() {
+        const type = document.getElementById('typeDocument').value;
+        const titre = titres[type] || 'Document';
+        const contenu = remplacerVariables(textarea.value);
+        const infos = [
+            ['Élève', (donnees.eleve_prenoms + ' ' + donnees.eleve_nom).trim()],
+            ['Matricule', donnees.eleve_matricule],
+            ['Classe', donnees.eleve_classe],
+            ['Année scolaire', donnees.annee_scolaire]
+        ];
+        const lignesInfos = infos.filter(l => l[1]).map(l =>
+            `<tr><td style="width:180px;background:#f8fafc"><strong>${l[0]}</strong></td><td>${l[1]}</td></tr>`
+        ).join('');
+        const html = `
+        <!doctype html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e293b; line-height: 1.6; margin: 0; padding: 30px; }
+            .entete { text-align: center; border-bottom: 3px solid #1d4ed8; padding-bottom: 8px; }
+            .etab { font-size: 22px; font-weight: 800; color: #1d4ed8; }
+            .sous { font-size: 12px; color: #475569; }
+            .titre { text-align: center; font-size: 16px; font-weight: 700; text-decoration: underline; margin: 20px 0; }
+            .infos { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+            .infos td { border: 1px solid #e2e8f0; padding: 4px 8px; }
+            .contenu { margin-top: 12px; }
+            .signature { margin-top: 48px; text-align: right; }
+            .mention { margin-top: 40px; font-size: 9px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 8px; text-align: center; }
+        </style>
+        </head>
+        <body>
+            <div class="entete">
+                ${(etab.logos && etab.logos.length ? etab.logos : (etab.logo_url ? [{data_uri: etab.logo_url}] : [])).map(l => l.data_uri ? `<img src="${l.data_uri}" style="max-height:56px; margin:0 4px">` : '').join('')}
+                <div class="etab">${etab.nom_officiel || enTete}</div>
+                <div class="sous">Établissement d'enseignement</div>
+            </div>
+            <div class="titre">${titre}</div>
+            ${lignesInfos ? `<table class="infos">${lignesInfos}</table>` : ''}
+            <div class="contenu">${contenu}</div>
+            <div class="signature">Fait le ${donnees.date_jour || ''},<br>Le Directeur</div>
+            ${mentions ? `<div class="mention">${mentions}</div>` : ''}
+        </body>
+        </html>`;
+        document.getElementById('apercu').srcdoc = html;
+    }
+
+    function recharger() {
+        const type = document.getElementById('typeDocument').value;
+        const eleve = document.getElementById('selectEleve').value;
+        localStorage.setItem('editeur_contenu_' + type + '_' + eleve, textarea.value);
+        window.location = "{% url 'documents:editeur' %}?type_document=" + encodeURIComponent(type) + "&eleve=" + encodeURIComponent(eleve);
+    }
+
+    const destinataire = document.getElementById('destinataire');
+    // Pré-remplit l'e-mail du destinataire avec celui du tuteur de l'élève sélectionné
+    if (destinataire && donnees.tuteur_email && !destinataire.value.trim()) {
+        destinataire.value = donnees.tuteur_email;
+    }
+
+    textarea.addEventListener('input', () => {
+        localStorage.setItem(cleStockage, textarea.value);
+        construireApercu();
+    });
+    document.getElementById('typeDocument').addEventListener('change', recharger);
+    document.getElementById('selectEleve').addEventListener('change', recharger);
+    construireApercu();
+</script>
+{% endblock %}

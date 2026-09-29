@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Courrier — {{ inscription.eleve }}</title>
+    <style>
+        @page { size: A4; margin: 20mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; color: #1e293b; line-height: 1.6; }
+        .entete { display: flex; justify-content: space-between; border-bottom: 2px solid #1d4ed8; padding-bottom: 8px; }
+        .etab { font-size: 17px; font-weight: 800; color: #1d4ed8; }
+        .date { text-align: right; margin: 14px 0; }
+        .objet { font-weight: 700; text-decoration: underline; margin: 14px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #cbd5e1; padding: 4px 6px; }
+        th { background: #f8fafc; text-align: left; }
+        .signature { margin-top: 50px; text-align: right; }
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        <div style="display:flex; gap:10px;">
+            {% include "documents/_logos_en_tete.html" with hauteur=44 %}
+            <div>
+                <div class="etab">{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+                <div>Établissement d'enseignement{% if etab.adresse %} — {{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}</div>
+            </div>
+        </div>
+        <div>Réf. : {{ doc.numero|default:type_courrier }}</div>
+    </div>
+
+    <div class="date">{% now "d/m/Y" %}</div>
+
+    <div class="destinataire">
+        {% if tuteur %}À l'attention de <strong>{{ tuteur.nom_complet }}</strong> — {{ tuteur.get_lien_parente_display }} de
+        {% else %}À l'attention des parents de {% endif %}
+        l'élève <strong>{{ inscription.eleve.nom }} {{ inscription.eleve.prenoms }}</strong>
+        ({{ inscription.eleve.matricule }}, classe de {{ inscription.classe.libelle }}).
+    </div>
+
+    <div class="objet">
+        {% if type_courrier == "CONVOCATION" %}Objet : Convocation{% endif %}
+        {% if type_courrier == "AVERTISSEMENT" %}Objet : Avertissement{% endif %}
+        {% if type_courrier == "MISE_EN_DEMEURE" %}Objet : Mise en demeure de paiement{% endif %}
+    </div>
+
+    <p>Madame, Monsieur,</p>
+
+    {% if type_courrier == "CONVOCATION" %}
+    <p>
+        Nous vous prions de bien vouloir vous présenter à l'établissement
+        {% if motif %}pour le motif suivant : <em>{{ motif }}</em>{% else %}pour un entretien concernant la scolarité de votre enfant.{% endif %}
+        Nous vous remercions de votre présence.
+    </p>
+
+    {% elif type_courrier == "AVERTISSEMENT" %}
+    <p>
+        Nous attirons votre attention sur le comportement ou la situation de l'élève
+        <strong>{{ inscription.eleve.prenoms }} {{ inscription.eleve.nom }}</strong> :
+        {% if motif %}{{ motif }}{% else %}un manquement au règlement intérieur a été relevé.{% endif %}
+        Nous comptons sur votre collaboration pour y remédier.
+    </p>
+
+    {% elif type_courrier == "MISE_EN_DEMEURE" %}
+    <p>
+        Le solde de la scolarité de votre enfant s'élève à
+        <strong>{{ situation.solde }} F</strong>. Nous vous mettons en demeure de régulariser
+        votre situation dans un délai de quinze (15) jours à compter de la réception de la présente.
+    </p>
+    <table>
+        <thead><tr><th>Échéance</th><th>Montant dû</th><th>Payé</th><th>Solde</th></tr></thead>
+        <tbody>
+            {% for echeance in inscription.echeances.all %}
+            {% if echeance.solde > 0 %}
+            <tr><td>{{ echeance.libelle }}</td><td>{{ echeance.montant_du }} F</td><td>{{ echeance.montant_paye }} F</td><td>{{ echeance.solde }} F</td></tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+    <p>À défaut, l'établissement se verra dans l'obligation de suspendre la délivrance des documents officiels.</p>
+    {% endif %}
+
+    <p>Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.</p>
+
+    <div class="signature">Le Directeur{% if etab.nom_directeur %} — {{ etab.nom_directeur }}{% endif %} — {{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+
+    {% if etab.mentions_legales %}
+    <div style="margin-top:30px; font-size:9px; color:#64748b; text-align:center; border-top:1px solid #cbd5e1; padding-top:8px;">{{ etab.mentions_legales|safe }}</div>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Bilan hebdomadaire des notes</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .table th, .table td { padding: 10px; border: 1px solid #dee2e6; text-align: left; }
+        .table th { background-color: #e9ecef; }
+        .footer { margin-top: 30px; font-size: 0.9em; color: #6c757d; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Bilan Scolaire Hebdomadaire</h2>
+            <p><strong>{{ eleve.nom }} {{ eleve.prenoms }}</strong> - {{ classe.libelle }}</p>
+        </div>
+        
+        <p>Bonjour,</p>
+        <p>Voici le récapitulatif des nouvelles notes validées pour <strong>{{ eleve.prenoms }}</strong> durant la semaine du {{ date_debut }} au {{ date_fin }}.</p>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Matière</th>
+                    <th>Évaluation</th>
+                    <th>Date</th>
+                    <th>Note / 20</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in notes %}
+                <tr>
+                    <td><strong>{{ note.evaluation.matiere.libelle }}</strong></td>
+                    <td>{{ note.evaluation.get_type_evaluation_display }}</td>
+                    <td>{{ note.evaluation.date|date:"d/m/Y" }}</td>
+                    <td><strong style="color: {% if note.valeur >= 10 %}#198754{% else %}#dc3545{% endif %};">{{ note.valeur }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <p style="margin-top: 20px;">
+            Vous pouvez consulter le détail complet et les bulletins sur le portail de l'établissement.
+        </p>
+        
+        <div class="footer">
+            <p>Ceci est un message automatique, merci de ne pas y répondre.</p>
+            <p>&copy; {{ now|date:"Y" }} - Système de Gestion Scolaire</p>
+        </div>
+    </div>
+</body>
+</html>

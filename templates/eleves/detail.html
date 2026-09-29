@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}Dossier — {{ eleve }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            {% if eleve.photo %}
+            <img src="{{ eleve.photo.url }}" class="rounded-circle border" style="width:64px;height:64px;object-fit:cover" alt="Photo">
+            {% else %}
+            <div class="avatar rounded-circle" style="width:64px;height:64px;font-size:1.4rem">{{ eleve.prenoms|first|upper }}{{ eleve.nom|first|upper }}</div>
+            {% endif %}
+            <div>
+                <h1 class="mb-0">{{ eleve.nom }} {{ eleve.prenoms }}</h1>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <span class="badge badge-soft-secondary font-monospace">{{ eleve.matricule }}</span>
+                    {% if eleve.statut == 'ACTIF' %}<span class="badge badge-soft-success">Actif</span>
+                    {% elif eleve.statut == 'TRANSFERE' %}<span class="badge badge-soft-warning">Transféré</span>
+                    {% elif eleve.statut == 'RADIE' %}<span class="badge badge-soft-danger">Radié</span>
+                    {% else %}<span class="badge badge-soft-secondary">Diplômé</span>{% endif %}
+                    <span class="badge badge-soft-primary">{{ eleve.get_regime_display }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'eleves:carte_scolaire' eleve.pk %}" class="btn btn-outline-primary" target="_blank"><i class="bi bi-qr-code me-1"></i>Carte scolaire</a>
+            <a href="{% url 'eleves:modifier' eleve.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Modifier</a>
+            <a href="{% url 'eleves:transferer' eleve.pk %}" class="btn btn-outline-danger"><i class="bi bi-arrow-left-right me-1"></i>Transférer / radier</a>
+        </div>
+    </div>
+
+    {% if situation %}
+    <div class="row g-3 mt-1">
+        <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-cash-coin"></i></div>
+            <div><div class="stat-valeur">{{ situation.total_du }} F</div><div class="stat-libelle">Total dû</div></div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+            <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+            <div><div class="stat-valeur">{{ situation.total_paye }} F</div><div class="stat-libelle">Total payé</div></div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+            <div class="stat-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-exclamation-circle"></i></div>
+            <div><div class="stat-valeur">{{ situation.solde }} F</div><div class="stat-libelle">Solde restant</div></div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+            <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-list-check"></i></div>
+            <div><div class="stat-valeur">{{ situation.nb_impayees }}</div><div class="stat-libelle">Échéances non soldées</div></div></div></div></div>
+    </div>
+    {% endif %}
+
+    <ul class="nav nav-tabs dossier-tabs mt-4" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-infos">Infos personnelles</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-scolarite">Scolarité</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-finances">Finances</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-documents">Documents</button></li>
+    </ul>
+
+    <div class="tab-content mt-3">
+        <!-- Infos -->
+        <div class="tab-pane fade show active" id="tab-infos">
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="card">
+                        <div class="card-header fw-semibold">État civil</div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-2"><span class="text-muted small">Date de naissance</span><br><strong>{{ eleve.date_naissance|date:"d/m/Y" }}</strong></div>
+                                <div class="col-md-6 mb-2"><span class="text-muted small">Lieu de naissance</span><br><strong>{{ eleve.lieu_naissance|default:"—" }}</strong></div>
+                                <div class="col-md-6 mb-2"><span class="text-muted small">Sexe</span><br><strong>{{ eleve.get_sexe_display }}</strong></div>
+                                <div class="col-md-6 mb-2"><span class="text-muted small">Adresse</span><br><strong>{{ eleve.adresse|default:"—" }}</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card">
+                        <div class="card-header fw-semibold">Tuteurs / parents</div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                {% for tuteur in eleve.tuteurs.all %}
+                                <li class="list-group-item">
+                                    <strong>{{ tuteur.nom_complet }}</strong>
+                                    <span class="badge badge-soft-primary ms-1">{{ tuteur.get_lien_parente_display }}</span>
+                                    {% if tuteur.contact_urgence %}<span class="badge badge-soft-danger ms-1">Urgence</span>{% endif %}
+                                    <div class="small text-muted mt-1">
+                                        <i class="bi bi-telephone me-1"></i>{{ tuteur.telephone }}
+                                        {% if tuteur.email %}<i class="bi bi-envelope ms-2 me-1"></i>{{ tuteur.email }}{% endif %}
+                                    </div>
+                                </li>
+                                {% empty %}
+                                <li class="list-group-item text-muted">Aucun tuteur enregistré.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scolarité -->
+        <div class="tab-pane fade" id="tab-scolarite">
+            <div class="card">
+                <div class="card-header fw-semibold">Parcours scolaire</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead><tr><th>Année</th><th>Classe</th><th>Statut</th><th>Décision</th></tr></thead>
+                            <tbody>
+                                {% for ins in inscriptions %}
+                                <tr>
+                                    <td>{{ ins.annee_scolaire }}</td>
+                                    <td>{{ ins.classe.libelle }}</td>
+                                    <td>
+                                        {% if ins.statut == 'ACTIVE' %}<span class="badge badge-soft-success">Active</span>
+                                        {% else %}<span class="badge badge-soft-secondary">{{ ins.get_statut_display }}</span>{% endif %}
+                                    </td>
+                                    <td>{{ ins.decision_fin_annee|default:"—" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted py-3">Aucune inscription.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {% if inscription_courante %}
+            <div class="card mt-3">
+                <div class="card-header fw-semibold">Notes ({{ inscription_courante.classe.libelle }} — année en cours)</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Matière</th><th>Évaluation</th><th>Période</th><th>Note</th><th>Coefficient</th></tr></thead>
+                            <tbody>
+                                {% for note in notes %}
+                                <tr>
+                                    <td>{{ note.evaluation.matiere.libelle }}</td>
+                                    <td>{{ note.evaluation.get_type_evaluation_display }} du {{ note.evaluation.date|date:"d/m/Y" }}</td>
+                                    <td>{{ note.evaluation.periode }}</td>
+                                    <td><strong>{{ note.valeur }}</strong></td>
+                                    <td>{{ note.evaluation.coefficient }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-3">Aucune note saisie.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header fw-semibold">Bulletins</div>
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead><tr><th>Période</th><th>Moyenne</th><th>Rang</th><th>Mention</th><th></th></tr></thead>
+                        <tbody>
+                            {% for bulletin in bulletins %}
+                            <tr>
+                                <td>{% if bulletin.est_annuel %}Annuel{% else %}{{ bulletin.periode }}{% endif %}</td>
+                                <td><strong>{{ bulletin.moyenne_generale|default:"—" }}</strong></td>
+                                <td>{{ bulletin.rang|default:"—" }}</td>
+                                <td>{{ bulletin.mention|default:"—" }}</td>
+                                <td>
+                                    {% if bulletin.fichier_pdf %}
+                                    <a href="{{ bulletin.fichier_pdf.url }}" class="btn btn-sm btn-outline-primary" target="_blank"><i class="bi bi-download"></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">Aucun bulletin généré.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Finances -->
+        <div class="tab-pane fade" id="tab-finances">
+            <div class="card">
+                <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                    <span>Échéancier de scolarité</span>
+                    {% if inscription_courante %}
+                    <a href="{% url 'finances:encaisser' %}?inscription={{ inscription_courante.pk }}" class="btn btn-sm btn-success"><i class="bi bi-cash-coin me-1"></i>Encaisser un paiement</a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0 align-middle">
+                            <thead><tr><th>Échéance</th><th>Montant dû</th><th>Payé</th><th>Solde</th><th>Échéance</th><th>Statut</th></tr></thead>
+                            <tbody>
+                                {% for echeance in echeances %}
+                                <tr>
+                                    <td>{{ echeance.libelle }}</td>
+                                    <td>{{ echeance.montant_du }} F</td>
+                                    <td class="text-success">{{ echeance.montant_paye }} F</td>
+                                    <td><strong>{{ echeance.solde }} F</strong></td>
+                                    <td>{{ echeance.date_echeance|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if echeance.statut == 'PAYE' %}<span class="badge badge-soft-success">Payé</span>
+                                        {% elif echeance.statut == 'PARTIEL' %}<span class="badge badge-soft-warning">Partiel</span>
+                                        {% else %}<span class="badge badge-soft-danger">Impayé</span>{% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="text-center text-muted py-3">Aucune échéance.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header fw-semibold">Historique des paiements</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead><tr><th>Date</th><th>Montant</th><th>Mode</th><th>Référence</th><th>Reçu</th><th>Statut</th></tr></thead>
+                            <tbody>
+                                {% for paiement in paiements %}
+                                <tr>
+                                    <td>{{ paiement.date_paiement|date:"d/m/Y H:i" }}</td>
+                                    <td><strong>{{ paiement.montant }} F</strong></td>
+                                    <td>{{ paiement.get_mode_paiement_display }}</td>
+                                    <td>{{ paiement.reference|default:"—" }}</td>
+                                    <td>{% if paiement.recu %}<a href="{% url 'finances:recu' paiement.recu.pk %}" class="btn btn-sm btn-outline-primary" target="_blank"><i class="bi bi-receipt"></i> {{ paiement.recu.numero }}</a>{% else %}—{% endif %}</td>
+                                    <td>
+                                        {% if paiement.statut == 'VALIDE' %}<span class="badge badge-soft-success">Validé</span>
+                                        {% elif paiement.statut == 'ANNULE' %}<span class="badge badge-soft-danger">Annulé</span>
+                                        {% else %}<span class="badge badge-soft-secondary">Remboursé</span>{% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="text-center text-muted py-3">Aucun paiement.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header fw-semibold">Factures</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <thead><tr><th>N°</th><th>Montant</th><th>Statut</th></tr></thead>
+                                <tbody>
+                                    {% for facture in factures %}
+                                    <tr>
+                                        <td><span class="font-monospace">{{ facture.numero }}</span></td>
+                                        <td>{{ facture.montant_total }} F</td>
+                                        <td>
+                                            {% if facture.statut == 'EMISE' %}<span class="badge badge-soft-warning">Émise</span>
+                                            {% elif facture.statut == 'SOLDEE' %}<span class="badge badge-soft-success">Soldée</span>
+                                            {% else %}<span class="badge badge-soft-danger">Annulée</span>{% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="3" class="text-center text-muted py-3">Aucune facture.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header fw-semibold">Remises & bourses</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <thead><tr><th>Type</th><th>Montant</th><th>Motif</th></tr></thead>
+                                <tbody>
+                                    {% for remise in remises %}
+                                    <tr>
+                                        <td>{{ remise.get_type_remise_display }}</td>
+                                        <td><strong>{{ remise.montant }} F</strong></td>
+                                        <td class="small">{{ remise.motif|truncatechars:60 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="3" class="text-center text-muted py-3">Aucune remise.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="tab-pane fade" id="tab-documents">
+            <div class="card">
+                <div class="card-header fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>Documents administratifs émis</span>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'documents:editeur' %}?eleve={{ eleve.pk }}&type_document=CERTIFICAT_SCOLARITE" class="btn btn-sm btn-outline-info"><i class="bi bi-envelope-paper me-1"></i>Éditer & envoyer par e-mail</a>
+                        <a href="{% url 'documents:pour_eleve' eleve.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-plus me-1"></i>Générer un document</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead><tr><th>Type</th><th>Date</th><th>Généré par</th><th></th></tr></thead>
+                            <tbody>
+                                {% for doc in eleve.documents.all %}
+                                <tr>
+                                    <td>{{ doc.get_type_document_display }}</td>
+                                    <td>{{ doc.date_generation|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ doc.genere_par.get_full_name|default:doc.genere_par|default:"—" }}</td>
+                                    <td>{% if doc.fichier_pdf %}<a href="{{ doc.fichier_pdf.url }}" class="btn btn-sm btn-outline-primary" target="_blank"><i class="bi bi-download"></i></a>{% endif %}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted py-3">Aucun document émis.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

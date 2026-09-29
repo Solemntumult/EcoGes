@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Matières & coefficients{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-bookmark-star me-2 text-primary"></i>Matières & coefficients</h1>
+            <p class="text-muted mb-0 mt-1">
+                Gestionnaire de bulletins — un coefficient appartient toujours au couple
+                <strong>(matière, classe)</strong> : la même matière peut avoir un coefficient
+                différent d'une classe à l'autre, même au sein d'une même série.
+            </p>
+        </div>
+        <a href="{% url 'accueil' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Accueil</a>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header fw-semibold"><i class="bi bi-plus-circle me-1"></i>Nouveau niveau <span class="badge text-bg-light border">second cycle = série</span></div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        Créez un niveau du premier cycle (6ème…) sans série, ou du second cycle
+                        (2nde, 1ère, Terminale) en lui attribuant une série officielle (A1, C, D, F1…).
+                    </p>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="creer_niveau" value="1">
+                        <div class="mb-2"><label class="form-label small">Libellé</label>{{ form_niveau.libelle }}</div>
+                        <div class="mb-2"><label class="form-label small">Cycle</label>{{ form_niveau.cycle }}</div>
+                        <div class="mb-3"><label class="form-label small">Série (second cycle)</label>{{ form_niveau.serie }}</div>
+                        {% if form_niveau.errors %}<div class="text-danger small mb-2">{{ form_niveau.errors }}</div>{% endif %}
+                        <button class="btn btn-primary btn-sm w-100"><i class="bi bi-check-lg me-1"></i>Créer le niveau</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-journal-plus me-1"></i>Nouvelle matière</div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        Créez une matière pour un niveau/série donné — le coefficient se fixe ensuite
+                        <strong>par classe</strong> (onglet « Coefficients par classe » ci-contre).
+                    </p>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="creer_matiere" value="1">
+                        <div class="mb-2"><label class="form-label small">Libellé</label>{{ form_matiere.libelle }}</div>
+                        <div class="mb-2"><label class="form-label small">Niveau</label>{{ form_matiere.niveau }}</div>
+                        <div class="form-check mb-3">
+                            {{ form_matiere.tronc_commun }}
+                            <label class="form-check-label small" for="{{ form_matiere.tronc_commun.id_for_label }}">
+                                <i class="bi bi-star-fill text-warning me-1"></i>Matière du tronc commun
+                            </label>
+                            <div class="form-text">
+                                Liée automatiquement à toutes les classes de ce niveau (à leur création comme à la création de la matière).
+                            </div>
+                        </div>
+                        {% if form_matiere.errors %}<div class="text-danger small mb-2">{{ form_matiere.errors }}</div>{% endif %}
+                        <button class="btn btn-primary btn-sm w-100"><i class="bi bi-check-lg me-1"></i>Créer la matière</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header fw-semibold"><i class="bi bi-list-check me-1"></i>Coefficients par classe</div>
+                <div class="card-body p-0">
+                    {% if classes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr><th>Classe</th><th>Niveau</th><th>Série</th><th class="text-center">Matières</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                {% for classe in classes %}
+                                <tr>
+                                    <td class="fw-semibold">{{ classe.libelle }}</td>
+                                    <td>{{ classe.niveau.libelle }}</td>
+                                    <td>
+                                        {% if classe.niveau.serie %}<span class="badge text-bg-primary">{{ classe.niveau.serie.code }}</span> {{ classe.niveau.serie.libelle }}{% else %}<span class="text-muted">—</span>{% endif %}
+                                    </td>
+                                    <td class="text-center">{{ classe.matiere_coefficients.count }}</td>
+                                    <td class="text-end">
+                                        <a href="{% url 'parametrage:classe_matieres' classe.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-sliders me-1"></i>Coefficients
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-4">Aucune classe pour l'année en cours.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">Aucune classe définie pour l'année scolaire en cours.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-journal-text me-1"></i>Matières par niveau et série</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr><th>Niveau</th><th>Cycle</th><th>Série</th><th>Matières</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for niveau in niveaux %}
+                                <tr>
+                                    <td class="fw-semibold">{{ niveau.libelle }}</td>
+                                    <td>{{ niveau.get_cycle_display }}</td>
+                                    <td>
+                                        {% if niveau.serie %}<span class="badge text-bg-primary">{{ niveau.serie.code }}</span> {{ niveau.serie.libelle }}{% else %}<span class="text-muted">—</span>{% endif %}
+                                    </td>
+                                    <td>
+                                        {% for matiere in niveau.matieres.all %}
+                                        <span class="d-inline-flex align-items-center gap-1">
+                                            <span class="badge badge-soft-secondary border {% if matiere.tronc_commun %}tronc-commun-badge{% endif %}">
+                                                {% if matiere.tronc_commun %}<i class="bi bi-star-fill text-warning me-1" title="Tronc commun — liée à toutes les classes du niveau"></i>{% endif %}
+                                                {{ matiere.libelle }}
+                                            </span>
+                                            <form method="post" action="{% url 'parametrage:basculer_tronc_commun' matiere.pk %}" class="d-inline m-0">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent"
+                                                        aria-label="{% if matiere.tronc_commun %}Retirer « {{ matiere.libelle }} » du tronc commun{% else %}Marquer « {{ matiere.libelle }} » comme tronc commun{% endif %}"
+                                                        title="{% if matiere.tronc_commun %}Retirer du tronc commun{% else %}Marquer comme tronc commun{% endif %}">
+                                                    <i class="bi {% if matiere.tronc_commun %}bi-x-circle text-danger{% else %}bi-plus-circle text-primary{% endif %}"></i>
+                                                </button>
+                                            </form>
+                                        </span>
+                                        {% empty %}
+                                        <span class="text-muted small">Aucune matière</span>
+                                        {% endfor %}
+                                        {% if niveau.matieres.all %}
+                                        <div class="small text-muted mt-1"><i class="bi bi-star-fill text-warning"></i> = tronc commun (lié automatiquement aux classes du niveau)</div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted py-4">Aucun niveau défini.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

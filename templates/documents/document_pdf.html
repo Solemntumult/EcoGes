@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>{{ titre }}</title>
+    <style>
+        @page { size: A4; margin: 18mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; color: #1e293b; line-height: 1.6; }
+        .entete { text-align: center; border-bottom: 3px solid #1d4ed8; padding-bottom: 8px; }
+        .etab { font-size: 22px; font-weight: 800; color: #1d4ed8; }
+        .sous { font-size: 12px; color: #475569; }
+        .titre { text-align: center; font-size: 16px; font-weight: 700; text-decoration: underline; margin: 20px 0; }
+        .infos { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+        .infos td { border: 1px solid #e2e8f0; padding: 4px 8px; }
+        .contenu { margin-top: 12px; }
+        .signature { margin-top: 48px; text-align: right; }
+        {% if modele and modele.mentions_legales %}.mention { margin-top: 40px; font-size: 9px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 8px; text-align: center; }{% endif %}
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        {% include "documents/_logos_en_tete.html" with hauteur=56 %}
+        <div class="etab">{% if en_tete_personnalise %}{{ en_tete_texte }}{% else %}{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}{% endif %}</div>
+        <div class="sous">Établissement d'enseignement{% if etab.adresse %} — {{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}{% if etab.telephone %} · Tél. {{ etab.telephone }}{% endif %}</div>
+    </div>
+
+    {% if doc and doc.numero %}<div style="text-align:right; font-size:11px; margin-top:6px;">N° {{ doc.numero }}</div>{% endif %}
+
+    <div class="titre">{{ titre }}</div>
+
+    {% if infos %}
+    <table class="infos">
+        {% for label, valeur in infos %}
+        {% if valeur %}<tr><td style="width:180px;background:#f8fafc"><strong>{{ label }}</strong></td><td>{{ valeur }}</td></tr>{% endif %}
+        {% endfor %}
+    </table>
+    {% endif %}
+
+    <div class="contenu">{{ contenu|safe }}</div>
+
+    <div class="signature">Fait le {{ date_jour }},<br>Le Directeur / La Directrice{% if etab.nom_directeur %}<br>{{ etab.nom_directeur }}{% endif %}<br>Cachet et signature</div>
+
+    {% if modele and modele.mentions_legales %}
+    <div class="mention">{{ modele.mentions_legales|safe }}</div>
+    {% elif etab.mentions_legales %}
+    <div class="mention">{{ etab.mentions_legales|safe }}</div>
+    {% endif %}
+</body>
+</html>

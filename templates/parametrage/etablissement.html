@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Établissement{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header">
+        <h1 class="mb-0"><i class="bi bi-building me-2 text-primary"></i>Paramètres de l'établissement</h1>
+        <p class="text-muted mb-0 mt-1">
+            Saisis une seule fois, ces informations apparaissent sur tous les documents générés
+            (bulletins, factures, reçus, certificats, cartes scolaires...) : logo, nom officiel,
+            adresse, IFU, signataires et mentions légales.
+        </p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="card mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-info-circle me-1"></i>Identité & coordonnées</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8"><label class="form-label">Nom officiel</label>{{ form.nom_officiel }}</div>
+                            <div class="col-md-4"><label class="form-label">Sigle</label>{{ form.sigle }}</div>
+                            <div class="col-md-6"><label class="form-label">Devise / slogan</label>{{ form.devise }}</div>
+                            <div class="col-md-6"><label class="form-label">Logo (PNG transparent)</label>{{ form.logo }}</div>
+                            <div class="col-md-8"><label class="form-label">Adresse (rue / quartier)</label>{{ form.adresse }}</div>
+                            <div class="col-md-4"><label class="form-label">Boîte postale</label>{{ form.boite_postale }}</div>
+                            <div class="col-md-4"><label class="form-label">Ville</label>{{ form.ville }}</div>
+                            <div class="col-md-4"><label class="form-label">Commune</label>{{ form.commune }}</div>
+                            <div class="col-md-4"><label class="form-label">Pays</label>{{ form.pays }}</div>
+                            <div class="col-md-4"><label class="form-label">Téléphone</label>{{ form.telephone }}</div>
+                            <div class="col-md-4"><label class="form-label">E-mail</label>{{ form.email }}</div>
+                            <div class="col-md-4"><label class="form-label">Site web</label>{{ form.site_web }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-images me-1"></i>Logos de l'établissement <span class="badge text-bg-light border">plusieurs possibles</span></div>
+                    <div class="card-body">
+                        <p class="small text-muted">
+                            Ajoutez autant de logos que nécessaire — logo de l'État / ministère de tutelle,
+                            logo du collège, logo de la République... Ils s'affichent <strong>côte à côte</strong>
+                            dans l'en-tête de tous les documents générés (bulletins, certificats, cartes
+                            scolaires...), dans l'ordre indiqué.
+                        </p>
+                        {{ formset.management_form }}
+                        {% if formset.non_form_errors %}<div class="alert alert-danger py-2">{{ formset.non_form_errors }}</div>{% endif %}
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-2">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:40px">Image</th>
+                                        <th>Libellé</th>
+                                        <th style="width:90px">Ordre</th>
+                                        <th style="width:110px">En-tête</th>
+                                        <th style="width:60px">Suppr.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for f in formset %}
+                                    <tr>
+                                        <td>
+                                            {{ f.id }}
+                                            {% if f.image.value %}<img src="{{ f.image.value.url }}" alt="" style="height:36px; max-width:60px; object-fit:contain;" class="border rounded">
+                                            {% else %}<span class="text-muted small">—</span>{% endif %}
+                                        </td>
+                                        <td>
+                                            {{ f.libelle }}
+                                            {{ f.image }}
+                                            {% if f.image.errors %}<div class="text-danger small">{{ f.image.errors }}</div>{% endif %}
+                                        </td>
+                                        <td>{{ f.ordre }}</td>
+                                        <td class="text-center pt-3">{{ f.en_tete }}</td>
+                                        <td class="text-center pt-3">{{ f.DELETE }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="bi bi-info-circle me-1"></i>« En-tête » : ce logo apparaît sur les documents.
+                            Décochez pour le conserver sans l'afficher. Le champ « Logo » de la carte
+                            « Identité » reste disponible comme logo unique de secours.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-bank me-1"></i>Statut légal & fiscal</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4"><label class="form-label">Statut juridique</label>{{ form.statut_juridique }}</div>
+                            <div class="col-md-4"><label class="form-label">Catégorie</label>{{ form.categorie }}</div>
+                            <div class="col-md-4"><label class="form-label">Année de création</label>{{ form.annee_creation }}</div>
+                            <div class="col-md-12"><label class="form-label">Ministère de tutelle</label>{{ form.ministere_tutelle }}</div>
+                            <div class="col-md-6"><label class="form-label">N° arrêté d'ouverture</label>{{ form.numero_arrete }}</div>
+                            <div class="col-md-6"><label class="form-label">Date de l'arrêté</label>{{ form.date_arrete }}</div>
+                            <div class="col-md-4"><label class="form-label">Code établissement</label>{{ form.code_etablissement }}</div>
+                            <div class="col-md-4"><label class="form-label">Fondateur / promoteur</label>{{ form.fondateur }}</div>
+                            <div class="col-md-4"><label class="form-label">IFU</label>{{ form.ifu }}</div>
+                            <div class="col-md-6"><label class="form-label">RCCM</label>{{ form.rccm }}</div>
+                            <div class="col-md-6"><label class="form-label">Régime fiscal</label>{{ form.regime_fiscal }}</div>
+                        </div>
+                        <div class="small text-muted mt-2">
+                            <i class="bi bi-info-circle me-1"></i>L'IFU est obligatoire sur les factures au Bénin — il sera affiché sur l'en-tête des factures et reçus.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-pen me-1"></i>Signataires (signature manuscrite après impression)</div>
+                    <div class="card-body">
+                        <p class="small text-muted">Les PDF affichent le nom et la fonction du signataire en zone de signature ; vous imprimez puis signez et tamponnez à la main.</p>
+                        <div class="row g-3">
+                            <div class="col-md-4"><label class="form-label">Directeur</label>{{ form.nom_directeur }}</div>
+                            <div class="col-md-4"><label class="form-label">Censeur / Directeur des études</label>{{ form.nom_censeur }}</div>
+                            <div class="col-md-4"><label class="form-label">Comptable</label>{{ form.nom_comptable }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-journal-text me-1"></i>Mentions légales & certifications</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Mentions légales (pied de page des documents)</label>
+                            {{ form.mentions_legales }}
+                            <div class="form-text">Ex. « Document non contractuel », clause anti-falsification, validité...</div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Formule de certification standard</label>
+                            {{ form.formule_certification }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mb-4">
+                    <button class="btn btn-primary px-4"><i class="bi bi-check-lg me-1"></i>Enregistrer</button>
+                    <a href="{% url 'accueil' %}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header fw-semibold"><i class="bi bi-eye me-1"></i>Aperçu de l'en-tête</div>
+                    <div class="card-body">
+                        <div class="border rounded p-3 text-center bg-light">
+                            {% if logos_entete %}
+                            <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+                                {% for logo in logos_entete %}
+                                <img src="{{ logo.data_uri }}" alt="{{ logo.libelle }}" title="{{ logo.libelle }}" style="max-height:56px; max-width:100px; object-fit:contain;">
+                                {% endfor %}
+                            </div>
+                            {% elif logo_principal %}
+                            <img src="{{ logo_principal }}" alt="Logo" style="max-height:64px; max-width:100%;">
+                            {% else %}
+                            <div class="fs-1 text-muted"><i class="bi bi-image"></i></div>
+                            {% endif %}
+                            <div class="fw-bold mt-2">{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+                            <div class="small text-muted">
+                                {% if etab.adresse %}{{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}
+                                {% if etab.telephone %}<br>Tél. {{ etab.telephone }}{% endif %}
+                                {% if etab.ifu %}<br>IFU : {{ etab.ifu }}{% endif %}
+                            </div>
+                        </div>
+                        <p class="small text-muted mt-3 mb-0">
+                            <i class="bi bi-lightbulb me-1"></i>Cet en-tête s'affiche sur les bulletins, factures, reçus,
+                            certificats, attestations, listes de classe, courriers et cartes scolaires.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

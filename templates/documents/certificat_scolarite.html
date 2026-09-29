@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Certificat de scolarité — {{ eleve.matricule }}</title>
+    <style>
+        @page { size: A4; margin: 20mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; color: #1e293b; line-height: 1.7; }
+        .entete { text-align: center; border-bottom: 3px solid #1d4ed8; padding-bottom: 10px; margin-bottom: 18px; }
+        .etab { font-size: 20px; font-weight: 800; color: #1d4ed8; }
+        .sous-titre { font-size: 11px; color: #475569; }
+        .titre { text-align: center; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 18px 0; }
+        .corps { margin: 18px 0; }
+        .encadre { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; margin: 14px 0; background: #f8fafc; }
+        .signature { margin-top: 60px; text-align: right; }
+        {% if modele and modele.mentions_legales %}.mention { margin-top: 40px; font-size: 9px; color: #64748b; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 8px; }{% endif %}
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        {% include "documents/_logos_en_tete.html" with hauteur=60 %}
+        <div class="etab" style="margin-top:6px;">{% if modele and modele.en_tete_html %}{{ modele.en_tete_html|safe }}{% else %}{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}{% endif %}</div>
+        <div class="sous-titre">
+            {% if etab.sigle %}{{ etab.sigle }} — {% endif %}Établissement d'enseignement
+            {% if etab.adresse %}<br>{{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}
+            {% if etab.telephone %} · Tél. {{ etab.telephone }}{% endif %}
+            {% if etab.boite_postale %} · {{ etab.boite_postale }}{% endif %}
+        </div>
+    </div>
+
+    <div style="text-align:right; font-size:11px; margin-top:6px;">N° d'enregistrement : <strong>{{ doc.numero|default:"CER-…" }}</strong></div>
+
+    <div class="titre">CERTIFICAT DE SCOLARITÉ</div>
+
+    <div class="corps">
+        {% if etab.formule_certification %}
+        <p>{{ etab.formule_certification }}</p>
+        {% else %}
+        <p>Nous, soussigné(e), <strong>{% if etab.nom_directeur %}{{ etab.nom_directeur }}, {% endif %}Directeur(trice)</strong> de l'établissement <strong>{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</strong>, certifions que l'élève :</p>
+        {% endif %}
+        <p style="text-align:center">
+            <strong>{{ eleve.nom }} {{ eleve.prenoms }}</strong><br>
+            Né(e) le {{ eleve.date_naissance|date:"d/m/Y" }}{% if eleve.lieu_naissance %} à {{ eleve.lieu_naissance }}{% endif %}<br>
+            Sexe : {{ eleve.get_sexe_display }} · Matricule : <strong>{{ eleve.matricule }}</strong>
+        </p>
+
+        {% if inscription %}
+        <div class="encadre">
+            <p>est régulièrement inscrit(e) et fréquente notre établissement en classe de <strong>{{ inscription.classe.libelle }}{% if inscription.classe.niveau.serie %} (Série {{ inscription.classe.niveau.serie.code }}){% endif %}</strong> pour l'année scolaire <strong>{{ inscription.annee_scolaire }}</strong>,</p>
+            {% if inscription.annee_scolaire.date_debut %}
+            <p style="margin:0">du <strong>{{ inscription.annee_scolaire.date_debut|date:"d/m/Y" }}</strong> au <strong>{{ inscription.annee_scolaire.date_fin|date:"d/m/Y" }}</strong>.</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="encadre"><p>est régulièrement inscrit(e) dans notre établissement au titre de l'année scolaire en cours.</p></div>
+        {% endif %}
+
+        <p>Le présent certificat est délivré à l'intéressé(e) pour servir et valoir ce que de droit.</p>
+    </div>
+
+    <div class="signature">
+        Fait à {% if etab.ville %}{{ etab.ville }}{% else %}Cotonou{% endif %}, le {% now "d/m/Y" %},<br>
+        Le Directeur / La Directrice{% if etab.nom_directeur %}<br>{{ etab.nom_directeur }}{% endif %}<br>
+        {% if etab.sigle %}({{ etab.sigle }}){% endif %} — Cachet et signature
+    </div>
+
+    {% if modele and modele.mentions_legales %}
+    <div class="mention">{{ modele.mentions_legales|safe }}</div>
+    {% elif etab.mentions_legales %}
+    <div class="mention">{{ etab.mentions_legales|safe }}</div>
+    {% endif %}
+</body>
+</html>

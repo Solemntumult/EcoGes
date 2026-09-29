@@ -1,0 +1,50 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Carte scolaire — {{ eleve.matricule }}</title>
+    <style>
+        @page { size: 85mm 54mm; margin: 0; }
+        body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; }
+        .carte { width: 85mm; height: 54mm; background: linear-gradient(135deg, #1e3a8a, #1d4ed8); color: #fff; padding: 4mm; box-sizing: border-box; }
+        .en-tete { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.4); padding-bottom: 1.5mm; }
+        .etab { font-size: 11pt; font-weight: 700; }
+        .annee { font-size: 8pt; opacity: .85; }
+        .corps { display: flex; gap: 3mm; margin-top: 3mm; align-items: stretch; }
+        .photo { width: 17mm; height: 19mm; object-fit: cover; border: 1px solid rgba(255,255,255,.55); background:#fff; }
+        .infos { flex: 1; font-size: 9pt; }
+        .infos .ligne { margin-bottom: 1.2mm; }
+        .infos .label { opacity: .8; font-size: 7pt; text-transform: uppercase; }
+        .infos .valeur { font-weight: 600; }
+        .qr { width: 20mm; height: 20mm; background: #fff; padding: 1mm; }
+        .pied { margin-top: 2.5mm; font-size: 7pt; opacity: .85; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="carte">
+    <div style="text-align:center; font-size:6.5pt; font-weight:700; letter-spacing:.5pt; margin-bottom:1mm;">RÉPUBLIQUE DU BÉNIN</div>
+    <div class="en-tete">
+        <div style="display:flex; align-items:center; gap:1.5mm;">
+            {% include "documents/_logos_en_tete.html" with hauteur=38 %}
+            <div>
+                <div class="etab">{{ etab.sigle|default:etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+                <div class="annee">Année scolaire {{ inscription.annee_scolaire|default:"—" }}</div>
+            </div>
+        </div>
+        <div class="annee">{{ eleve.get_regime_display }}</div>
+    </div>
+    <div class="corps">
+        {% if photo_data_uri %}<img class="photo" src="{{ photo_data_uri }}" alt="Photo">{% endif %}
+        <div class="infos">
+            <div class="ligne"><div class="label">Matricule</div><div class="valeur">{{ eleve.matricule }}</div></div>
+            <div class="ligne"><div class="label">Nom & prénoms</div><div class="valeur">{{ eleve.nom }} {{ eleve.prenoms }}</div></div>
+            <div class="ligne"><div class="label">Classe</div><div class="valeur">{{ inscription.classe.libelle|default:"—" }}</div></div>
+            <div class="ligne"><div class="label">Né(e) le</div><div class="valeur">{{ eleve.date_naissance|date:"d/m/Y" }}</div></div>
+        </div>
+        <img class="qr" src="{{ qr_code }}" alt="QR code">
+    </div>
+    <div class="pied">N° {{ doc.numero|default:"CAR-…" }} — {{ eleve.get_statut_display }}</div>
+</div>
+</body>
+</html>

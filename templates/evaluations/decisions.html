@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Décisions du conseil de classe{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header">
+        <h1 class="mb-0"><i class="bi bi-mortarboard me-2 text-primary"></i>Décisions du conseil de classe</h1>
+        <p class="text-muted mb-0 mt-1">Admis, redoublement ou exclusion — ces décisions pilotent la réinscription automatique (UC-25).</p>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-4"><label class="form-label">Classe</label>{{ form.classe }}</div>
+                <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> Afficher</button></div>
+            </form>
+        </div>
+    </div>
+
+    {% if inscriptions %}
+    <form method="post" class="card mt-3">
+        {% csrf_token %}
+        <div class="card-header fw-semibold">{{ classe.libelle }} — {{ inscriptions|length }} élève(s)</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0 align-middle">
+                    <thead><tr><th></th><th>Élève</th><th>Décision</th></tr></thead>
+                    <tbody>
+                        {% for inscription in inscriptions %}
+                        <tr>
+                            <td><input type="checkbox" name="inscriptions" value="{{ inscription.pk }}" class="form-check-input" checked></td>
+                            <td class="fw-semibold">{{ inscription.eleve.nom }} {{ inscription.eleve.prenoms }}</td>
+                            <td>
+                                <select name="decision_{{ inscription.pk }}" class="form-select form-select-sm" style="max-width:240px">
+                                    <option value="" {% if not inscription.decision_fin_annee %}selected{% endif %}>— Non décidé —</option>
+                                    {% for choix in choix %}
+                                    <option value="{{ choix }}" {% if inscription.decision_fin_annee == choix %}selected{% endif %}>{{ choix }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Enregistrer les décisions</button>
+        </div>
+    </form>
+    {% elif classe %}
+    <div class="alert alert-info mt-3">Aucun élève actif dans cette classe.</div>
+    {% endif %}
+</div>
+{% endblock %}

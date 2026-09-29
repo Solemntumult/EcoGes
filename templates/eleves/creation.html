@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Inscrire un élève{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header">
+        <h1 class="mb-0"><i class="bi bi-person-plus me-2 text-primary"></i>Inscrire un nouvel élève</h1>
+        <p class="text-muted mb-0 mt-1">Année scolaire : <strong>{{ annee_courante }}</strong> — le matricule et l'échéancier sont générés automatiquement.</p>
+    </div>
+
+    <div class="alert alert-info py-2 small"><i class="bi bi-info-circle me-1"></i>
+        L'échéancier de paiement est créé automatiquement à partir de la grille tarifaire du niveau choisi (UC-26).
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header fw-semibold"><i class="bi bi-person-vcard me-1"></i>Informations personnelles</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">Nom *</label>{{ form_eleve.nom }}{% if form_eleve.nom.errors %}<div class="text-danger small">{{ form_eleve.nom.errors }}</div>{% endif %}</div>
+                            <div class="col-md-6"><label class="form-label">Prénoms *</label>{{ form_eleve.prenoms }}{% if form_eleve.prenoms.errors %}<div class="text-danger small">{{ form_eleve.prenoms.errors }}</div>{% endif %}</div>
+                            <div class="col-md-4"><label class="form-label">Sexe *</label>{{ form_eleve.sexe }}</div>
+                            <div class="col-md-4"><label class="form-label">Date de naissance *</label>{{ form_eleve.date_naissance }}{% if form_eleve.date_naissance.errors %}<div class="text-danger small">{{ form_eleve.date_naissance.errors }}</div>{% endif %}</div>
+                            <div class="col-md-4"><label class="form-label">Lieu de naissance</label>{{ form_eleve.lieu_naissance }}</div>
+                            <div class="col-md-4"><label class="form-label">Régime</label>{{ form_eleve.regime }}</div>
+                            <div class="col-md-8"><label class="form-label">Adresse</label>{{ form_eleve.adresse }}</div>
+                            <div class="col-12"><label class="form-label">Photo</label>{{ form_eleve.photo }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-people me-1"></i>Tuteurs / parents</div>
+                    <div class="card-body">
+                        {{ formset_tuteurs.management_form }}
+                        {% for form in formset_tuteurs %}
+                        <div class="row g-2 border-bottom pb-3 mb-3 tuteur-ligne">
+                            {{ form.id }}
+                            <div class="col-md-4"><label class="form-label small">Nom complet</label>{{ form.nom_complet }}</div>
+                            <div class="col-md-2"><label class="form-label small">Lien</label>{{ form.lien_parente }}</div>
+                            <div class="col-md-3"><label class="form-label small">Téléphone</label>{{ form.telephone }}</div>
+                            <div class="col-md-3"><label class="form-label small">E-mail</label>{{ form.email }}</div>
+                            <div class="col-md-8"><label class="form-label small">Adresse</label>{{ form.adresse }}</div>
+                            <div class="col-md-3 d-flex align-items-end pb-2">
+                                <div class="form-check">{{ form.contact_urgence }}<label class="form-check-label small" for="{{ form.contact_urgence.id_for_label }}">Contact d'urgence</label></div>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end pb-2">
+                                {% if formset_tuteurs.can_delete %}<label class="small text-danger">{{ form.DELETE }} Suppr.</label>{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header fw-semibold"><i class="bi bi-journal-check me-1"></i>Inscription</div>
+                    <div class="card-body">
+                        <div class="mb-3"><label class="form-label">Classe *</label>{{ form_inscription.classe }}{% if form_inscription.classe.errors %}<div class="text-danger small">{{ form_inscription.classe.errors }}</div>{% endif %}</div>
+                        <div class="mb-3"><label class="form-label">Statut d'inscription</label>{{ form_inscription.statut_inscription }}</div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2 mt-3">
+                    <button class="btn btn-primary btn-lg"><i class="bi bi-check-lg me-1"></i>Enregistrer l'inscription</button>
+                    <a href="{% url 'eleves:liste' %}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

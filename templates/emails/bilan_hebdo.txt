@@ -1,0 +1,17 @@
+Bilan Scolaire Hebdomadaire
+{{ eleve.nom }} {{ eleve.prenoms }} - {{ classe.libelle }}
+--------------------------------------------------
+
+Bonjour,
+
+Voici le récapitulatif des nouvelles notes validées pour {{ eleve.prenoms }} durant la semaine du {{ date_debut }} au {{ date_fin }}.
+
+{% for note in notes %}
+* {{ note.evaluation.matiere.libelle }} ({{ note.evaluation.get_type_evaluation_display }}) du {{ note.evaluation.date|date:"d/m/Y" }} : {{ note.valeur }} / 20
+{% endfor %}
+
+Vous pouvez consulter le détail complet et les bulletins sur le portail de l'établissement.
+
+--------------------------------------------------
+Ceci est un message automatique, merci de ne pas y répondre.
+Système de Gestion Scolaire

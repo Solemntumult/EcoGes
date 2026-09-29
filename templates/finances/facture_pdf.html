@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Facture {{ facture.numero }}</title>
+    <style>
+        @page { size: A4; margin: 14mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; color: #1e293b; }
+        .entete { display: flex; justify-content: space-between; border-bottom: 3px solid #1d4ed8; padding-bottom: 8px; }
+        .etab { font-size: 17px; font-weight: 800; color: #1d4ed8; }
+        h2 { text-align: center; letter-spacing: 2px; margin: 12px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 8px; }
+        th { background: #eff6ff; text-align: left; }
+        .info td { border: none; padding: 1px 4px; }
+        .gras { font-weight: 700; }
+        .total td { font-size: 13px; background: #f8fafc; }
+        .pied { margin-top: 40px; display: flex; justify-content: space-between; font-size: 10px; }
+        .mention { margin-top: 24px; font-size: 9px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        <div style="display:flex; gap:10px;">
+            {% include "documents/_logos_en_tete.html" with hauteur=46 %}
+            <div>
+                <div class="etab">{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+                <div>Établissement d'enseignement{% if etab.adresse %} — {{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}</div>
+                <div>{% if etab.telephone %}Tél. {{ etab.telephone }} · {% endif %}{% if etab.email %}{{ etab.email }} · {% endif %}IFU : {{ etab.ifu|default:"—" }}{% if etab.rccm %} · RCCM : {{ etab.rccm }}{% endif %}</div>
+                {% if etab.regime_fiscal %}<div class="gras">{{ etab.regime_fiscal }}</div>{% endif %}
+            </div>
+        </div>
+        <div>Facture N° <strong>{{ facture.numero }}</strong><br>Émise le {{ facture.date_emission|date:"d/m/Y" }}</div>
+    </div>
+
+    <h2>FACTURE DE SCOLARITÉ</h2>
+
+    <table class="info">
+        <tr><td class="gras">Élève :</td><td>{{ facture.inscription.eleve.nom }} {{ facture.inscription.eleve.prenoms }}</td>
+            <td class="gras">Matricule :</td><td>{{ facture.inscription.eleve.matricule }}</td></tr>
+        <tr><td class="gras">Classe :</td><td>{{ facture.inscription.classe.libelle }}</td>
+            <td class="gras">Année :</td><td>{{ facture.inscription.annee_scolaire }}</td></tr>
+        {% if tuteur %}
+        <tr><td class="gras">Payeur :</td><td>{{ tuteur.nom_complet }} ({{ tuteur.get_lien_parente_display }})</td>
+            <td class="gras">Tél. payeur :</td><td>{{ tuteur.telephone }}</td></tr>
+        {% endif %}
+    </table>
+
+    <table>
+        <thead><tr><th>Désignation</th><th style="width:140px" class="centre">Montant (FCFA)</th></tr></thead>
+        <tbody>
+            {% for ligne in facture.lignes.all %}
+            <tr><td>{{ ligne.libelle }}</td><td class="centre">{{ ligne.montant|floatformat:0 }}</td></tr>
+            {% endfor %}
+            <tr class="total"><td class="gras">TOTAL À PAYER</td><td class="centre gras">{{ facture.montant_total|floatformat:0 }} FCFA</td></tr>
+        </tbody>
+    </table>
+
+    {% if montant_lettres %}
+    <p class="gras" style="margin-top:10px;">Arrêtée à la somme de : {{ montant_lettres }}.</p>
+    {% endif %}
+
+    <div class="pied">
+        <div>Le Comptable / La Comptable{% if etab.nom_comptable %}<br>{{ etab.nom_comptable }}{% endif %}<br>Cachet et signature</div>
+        <div>Statut : {{ facture.get_statut_display }}</div>
+    </div>
+
+    {% if etab.regime_fiscal %}
+    <div class="mention" style="text-align:left;">Mention fiscale : {{ etab.regime_fiscal }}. Facture non modifiable après émission — toute annulation donne lieu à un avoir.</div>
+    {% endif %}
+
+    {% if etab.mentions_legales %}
+    <div class="mention">{{ etab.mentions_legales|safe }}</div>
+    {% endif %}
+</body>
+</html>

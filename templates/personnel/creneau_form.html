@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{% if creneau %}Modifier{% else %}Ajouter{% endif %} un créneau{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="page-header">
+                <h1 class="mb-0"><i class="bi {% if creneau %}bi-pencil-square{% else %}bi-plus-square{% endif %} me-2 text-primary"></i>
+                    {% if creneau %}Modifier{% else %}Ajouter{% endif %} un créneau</h1>
+                <p class="text-muted mb-0 mt-1">Les conflits d'horaires (enseignant, classe, salle) sont détectés automatiquement.</p>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3"><label class="form-label">Affectation (enseignant — matière — classe)</label>{{ form.affectation }}</div>
+                        <div class="mb-3"><label class="form-label">Jour</label>{{ form.jour }}</div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">Heure de début</label>{{ form.heure_debut }}</div>
+                            <div class="col-md-6"><label class="form-label">Heure de fin</label>{{ form.heure_fin }}</div>
+                        </div>
+                        <div class="mb-3 mt-3"><label class="form-label">Salle (optionnel)</label>{{ form.salle }}</div>
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2">
+                            <i class="bi bi-exclamation-triangle me-1"></i>{{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary px-4"><i class="bi bi-check-lg me-1"></i>Enregistrer</button>
+                            {% if creneau %}
+                            <a href="{% url 'personnel:edt_classe' creneau.affectation.classe.pk %}" class="btn btn-outline-secondary">Annuler</a>
+                            {% else %}
+                            <a href="{% url 'personnel:edt_par_classe' %}" class="btn btn-outline-secondary">Annuler</a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

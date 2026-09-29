@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Fiche de paie {{ fiche.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Fiche de paie {{ fiche.numero }}</h1>
+            <p class="text-muted mb-0 mt-1">{{ fiche.personnel.nom }} {{ fiche.personnel.prenoms }} — {{ mois_libelle|capfirst }} {{ fiche.annee }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'personnel:remunerations' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Rémunérations</a>
+            <a href="{% url 'personnel:fiche_paie_pdf' fiche.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-download me-1"></i>Bulletin PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-list-ul me-1"></i>Détail des heures par matière</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Matière</th><th>Classe</th>
+                                    <th class="text-center">Heures / semaine</th>
+                                    <th class="text-end">Tarif horaire</th>
+                                    <th class="text-end">Montant hebdo</th>
+                                    <th class="text-end">Mensuel</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ligne in lignes %}
+                                <tr>
+                                    <td>{{ ligne.matiere }}</td>
+                                    <td>{{ ligne.classe }}</td>
+                                    <td class="text-center">{{ ligne.heures_hebdo }}</td>
+                                    <td class="text-end">{{ ligne.tarif_horaire }} F</td>
+                                    <td class="text-end">{{ ligne.montant_hebdo }} F</td>
+                                    <td class="text-end">{{ ligne.montant_hebdo }} F × 4,33</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-body border-top">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 text-center">
+                                <div class="small text-muted">Heures du mois (×4,33)</div>
+                                <div class="fs-4 fw-bold">{{ fiche.heures_total }} h</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 text-center">
+                                <div class="small text-muted">Salaire brut</div>
+                                <div class="fs-4 fw-bold text-primary">{{ fiche.montant_brut }} F</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 text-center">
+                                <div class="small text-muted">Statut</div>
+                                <div>
+                                    <span class="badge fs-6 {% if fiche.statut == 'PAYEE' %}text-bg-success{% elif fiche.statut == 'ANNULEE' %}text-bg-secondary{% else %}text-bg-warning{% endif %}">
+                                        {{ fiche.get_statut_display }}
+                                    </span>
+                                </div>
+                                {% if fiche.date_paiement %}<div class="small text-muted mt-1">le {{ fiche.date_paiement|date:"d/m/Y" }}</div>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            {% if fiche.statut == "CALCULEE" %}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold"><i class="bi bi-cash-coin me-1"></i>Encaisser le salaire</div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'personnel:fiche_paie_payer' fiche.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small">Mode de paiement</label>
+                            <select name="mode_paiement" class="form-select">
+                                {% for valeur, libelle in modes %}
+                                <option value="{{ valeur }}" {% if fiche.mode_paiement == valeur %}selected{% endif %}>{{ libelle }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small">Date de paiement</label>
+                            <input type="date" name="date_paiement" class="form-control" value="{% now 'Y-m-d' %}">
+                        </div>
+                        <button class="btn btn-success w-100"><i class="bi bi-check-circle me-1"></i>Marquer comme payée</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" action="{% url 'personnel:fiche_paie_annuler' fiche.pk %}"
+                          onsubmit="return confirm('Annuler cette fiche de paie ?');">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-danger w-100"><i class="bi bi-x-circle me-1"></i>Annuler la fiche</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-{% if fiche.statut == 'PAYEE' %}check-circle-fill text-success{% else %}dash-circle text-muted{% endif %} fs-4"></i>
+                        <div>
+                            <div class="fw-semibold">{{ fiche.get_statut_display }}</div>
+                            {% if fiche.date_paiement %}
+                            <div class="small text-muted">Paiement du {{ fiche.date_paiement|date:"d/m/Y" }} — {{ fiche.get_mode_paiement_display }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if fiche.fichier_pdf %}
+                    <a href="{{ fiche.fichier_pdf.url }}" class="btn btn-outline-primary w-100 mt-3" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Bulletin archivé
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

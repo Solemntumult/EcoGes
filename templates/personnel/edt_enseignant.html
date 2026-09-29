@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Emploi du temps enseignant{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header">
+        <h1 class="mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Emploi du temps par enseignant</h1>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <select name="enseignant" class="form-select">
+                        <option value="">— Choisir un enseignant —</option>
+                        {% for membre in enseignants %}
+                        <option value="{{ membre.pk }}" {% if enseignant and enseignant.pk == membre.pk %}selected{% endif %}>{{ membre.nom }} {{ membre.prenoms }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> Afficher</button></div>
+            </form>
+        </div>
+    </div>
+
+    {% if enseignant %}
+    <div class="card">
+        <div class="card-header fw-semibold">{{ enseignant.nom }} {{ enseignant.prenoms }}</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr><th style="width:110px">Horaire</th>
+                            {% for jour in jours %}<th class="text-center">{{ jour }}</th>{% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for horaire, cellules in lignes %}
+                        <tr>
+                            <td class="fw-semibold small align-middle text-center">
+                                {{ horaire.0|time:"H:i" }}<br>
+                                <span class="text-muted fw-normal">→ {{ horaire.1|time:"H:i" }}</span>
+                            </td>
+                            {% for creneau in cellules %}
+                            <td>
+                                {% if creneau %}
+                                <div class="border-start border-4 border-success ps-2">
+                                    <div class="fw-semibold small">{{ creneau.affectation.matiere.libelle }}</div>
+                                    <div class="small text-muted">{{ creneau.affectation.classe.libelle }}</div>
+                                    {% if creneau.salle %}<div class="small"><i class="bi bi-door-closed"></i> {{ creneau.salle }}</div>{% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info"><i class="bi bi-info-circle me-1"></i>Sélectionnez un enseignant pour afficher sa grille.</div>
+    {% endif %}
+</div>
+{% endblock %}

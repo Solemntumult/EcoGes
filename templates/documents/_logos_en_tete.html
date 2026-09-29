@@ -1,0 +1,13 @@
+{% comment %}
+En-tête logos des documents générés (PDF) — utilise les logos multiples
+({{ logos_entete }}, cochés « en-tête » dans Paramétrage → Établissement)
+et se replie sur le logo unique ({{ logo_principal }}) si aucun n'est défini.
+Usage : {% include "documents/_logos_en_tete.html" with hauteur=48 %}
+{% endcomment %}
+{% if logos_entete %}
+    {% for logo in logos_entete %}
+        {% if logo.data_uri %}<img src="{{ logo.data_uri }}" alt="{{ logo.libelle }}" style="height:{{ hauteur }}px;">{% endif %}
+    {% endfor %}
+{% elif logo_principal %}
+    <img src="{{ logo_principal }}" alt="Logo" style="height:{{ hauteur }}px;">
+{% endif %}

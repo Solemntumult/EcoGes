@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Attestation — {{ eleve.matricule }}</title>
+    <style>
+        @page { size: A4; margin: 20mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; color: #1e293b; line-height: 1.7; }
+        .entete { text-align: center; border-bottom: 3px solid #15803d; padding-bottom: 10px; margin-bottom: 18px; }
+        .etab { font-size: 20px; font-weight: 800; color: #15803d; }
+        .sous-titre { font-size: 11px; color: #475569; }
+        .titre { text-align: center; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 18px 0; }
+        .corps { margin: 18px 0; }
+        .resultat { text-align: center; border: 2px solid #15803d; border-radius: 8px; padding: 14px; margin: 18px 0; background: #f0fdf4; }
+        .resultat .moyenne { font-size: 26px; font-weight: 800; color: #15803d; }
+        .signature { margin-top: 60px; text-align: right; }
+        .mention { margin-top: 40px; font-size: 9px; color: #64748b; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 8px; }
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        {% include "documents/_logos_en_tete.html" with hauteur=60 %}
+        <div class="etab" style="margin-top:6px;">{% if modele and modele.en_tete_html %}{{ modele.en_tete_html|safe }}{% else %}{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}{% endif %}</div>
+        <div class="sous-titre">
+            {% if etab.sigle %}{{ etab.sigle }} — {% endif %}Établissement d'enseignement
+            {% if etab.adresse %}<br>{{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}
+            {% if etab.telephone %} · Tél. {{ etab.telephone }}{% endif %}
+        </div>
+    </div>
+
+    <div style="text-align:right; font-size:11px; margin-top:6px;">N° d'enregistrement : <strong>{{ doc.numero|default:"ATT-…" }}</strong></div>
+
+    <div class="titre">ATTESTATION DE RÉUSSITE / DE NIVEAU</div>
+
+    <div class="corps">
+        <p>Nous, soussigné(e), <strong>{% if etab.nom_directeur %}{{ etab.nom_directeur }}, {% endif %}Directeur(trice)</strong> de l'établissement <strong>{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</strong>, attestons que l'élève :</p>
+        <p style="text-align:center">
+            <strong>{{ eleve.nom }} {{ eleve.prenoms }}</strong><br>
+            Né(e) le {{ eleve.date_naissance|date:"d/m/Y" }}{% if eleve.lieu_naissance %} à {{ eleve.lieu_naissance }}{% endif %}<br>
+            Matricule : <strong>{{ eleve.matricule }}</strong>{% if inscription %} · Classe de {{ inscription.classe.libelle }}{% endif %}
+        </p>
+
+        {% if bulletin and bulletin.moyenne_generale is not None %}
+        <div class="resultat">
+            <div>a obtenu une moyenne générale de</div>
+            <div class="moyenne">{{ bulletin.moyenne_generale }} / 20</div>
+            <div>Mention : <strong>{{ bulletin.mention }}</strong>{% if bulletin.rang %} — Rang : {{ bulletin.rang }}{% endif %}</div>
+            {% if inscription.annee_scolaire %}<div style="font-size:11px; margin-top:4px;">au titre de l'année scolaire {{ inscription.annee_scolaire }}</div>{% endif %}
+        </div>
+        {% else %}
+        <p>a validé le niveau d'études de la classe de {{ inscription.classe.libelle|default:"—" }}{% if inscription.annee_scolaire %} au titre de l'année scolaire {{ inscription.annee_scolaire }}{% endif %}.</p>
+        {% endif %}
+
+        <p>En foi de quoi, la présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.</p>
+    </div>
+
+    <div class="signature">
+        Fait à {% if etab.ville %}{{ etab.ville }}{% else %}Cotonou{% endif %}, le {% now "d/m/Y" %},<br>
+        Le Directeur / La Directrice{% if etab.nom_directeur %}<br>{{ etab.nom_directeur }}{% endif %}<br>
+        {% if etab.sigle %}({{ etab.sigle }}){% endif %} — Cachet et signature
+    </div>
+
+    {% if etab.mentions_legales %}
+    <div class="mention">{{ etab.mentions_legales|safe }}</div>
+    {% endif %}
+</body>
+</html>

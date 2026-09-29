@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Liste de classe — {{ classe.libelle }}</title>
+    <style>
+        @page { size: A4 landscape; margin: 14mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10px; color: #1e293b; }
+        .entete { display: flex; justify-content: space-between; border-bottom: 2px solid #1d4ed8; padding-bottom: 6px; }
+        .etab { font-size: 16px; font-weight: 800; color: #1d4ed8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #cbd5e1; padding: 4px 6px; }
+        th { background: #eff6ff; text-align: left; }
+        .centre { text-align: center; }
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        <div style="display:flex; gap:10px;">
+            {% include "documents/_logos_en_tete.html" with hauteur=40 %}
+            <div>
+                <div class="etab">{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+                <div>Liste nominative des élèves — {{ classe.annee_scolaire }}{% if etab.adresse %} · {{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}</div>
+            </div>
+        </div>
+        <div>N° {{ doc.numero|default:"LIS-…" }}<br>Classe : <strong>{{ classe.libelle }}</strong><br>Effectif : {{ lignes|length }} élève(s)</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>N°</th><th>Matricule</th><th>Nom & prénoms</th><th class="centre">Sexe</th><th class="centre">Né(e) le</th><th class="centre">Régime</th><th class="centre">Situation financière</th></tr>
+        </thead>
+        <tbody>
+            {% for eleve, en_impaye in lignes %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ eleve.matricule }}</td>
+                <td>{{ eleve.nom }} {{ eleve.prenoms }}</td>
+                <td class="centre">{{ eleve.get_sexe_display }}</td>
+                <td class="centre">{{ eleve.date_naissance|date:"d/m/Y" }}</td>
+                <td class="centre">{{ eleve.get_regime_display }}</td>
+                <td class="centre">{% if en_impaye %}EN IMPAYÉ{% else %}À jour{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p style="text-align:right; margin-top: 20px;">Fait le {% now "d/m/Y" %} — Le Directeur / La Directrice{% if etab.nom_directeur %} ({{ etab.nom_directeur }}){% endif %} — Cachet et signature</p>
+</body>
+</html>

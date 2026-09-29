@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Lettre de relance — {{ inscription.eleve }}</title>
+    <style>
+        @page { size: A4; margin: 20mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; color: #1e293b; line-height: 1.5; }
+        .entete { display: flex; justify-content: space-between; border-bottom: 2px solid #b91c1c; padding-bottom: 8px; }
+        .etab { font-size: 17px; font-weight: 800; color: #b91c1c; }
+        .date { text-align: right; margin: 14px 0; }
+        .destinataire { margin-bottom: 18px; }
+        .objet { font-weight: 700; text-decoration: underline; margin-bottom: 14px; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        th, td { border: 1px solid #cbd5e1; padding: 5px 8px; }
+        th { background: #fef2f2; text-align: left; }
+        .total { font-weight: 700; }
+        .pied { margin-top: 44px; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        <div style="display:flex; gap:10px;">
+            {% include "documents/_logos_en_tete.html" with hauteur=44 %}
+            <div>
+                <div class="etab">{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+                <div>Service de scolarité — Recouvrement{% if etab.adresse %} — {{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}</div>
+            </div>
+        </div>
+        <div>Réf. : REL-{{ inscription.eleve.matricule }}</div>
+    </div>
+
+    <div class="date">{{ aujourdhui|date:"d/m/Y" }}</div>
+
+    <div class="destinataire">
+        À l'attention de {{ tuteur.nom_complet }}<br>
+        Parent / tuteur de l'élève {{ inscription.eleve.nom }} {{ inscription.eleve.prenoms }} ({{ inscription.eleve.matricule }})<br>
+        {% if tuteur.adresse %}{{ tuteur.adresse }}{% endif %}
+    </div>
+
+    <div class="objet">Objet : Relance de paiement de la scolarité</div>
+
+    <p>Madame, Monsieur,</p>
+    <p>
+        Nous vous rappelons que la scolarité de l'élève
+        <strong>{{ inscription.eleve.nom }} {{ inscription.eleve.prenoms }}</strong>
+        (classe de {{ inscription.classe.libelle }}, année {{ inscription.annee_scolaire }})
+        présente un solde restant dû de <strong>{{ solde }} F</strong> au titre des frais suivants :
+    </p>
+
+    <table>
+        <thead><tr><th>Échéance</th><th>Montant dû</th><th>Montant payé</th><th>Solde</th><th>Échéance le</th></tr></thead>
+        <tbody>
+            {% for echeance in impayees %}
+            <tr>
+                <td>{{ echeance.libelle }}</td>
+                <td>{{ echeance.montant_du }} F</td>
+                <td>{{ echeance.montant_paye }} F</td>
+                <td>{{ echeance.solde }} F</td>
+                <td>{{ echeance.date_echeance|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p>
+        Nous vous prions de bien vouloir régulariser votre situation dans les meilleurs délais.
+        À défaut, conformément au règlement intérieur de l'établissement, certains services
+        (documents officiels, certificats, bulletins) pourraient être suspendus.
+    </p>
+
+    <p>Dans l'attente de votre règlement, nous vous prions d'agréer, Madame, Monsieur, l'expression de nos salutations distinguées.</p>
+
+    <div class="pied">
+        <div>Le Caissier / La Direction{% if etab.nom_comptable %}<br>{{ etab.nom_comptable }}{% endif %}<br>Cachet et signature</div>
+        <div>{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+    </div>
+
+    {% if etab.mentions_legales %}
+    <div style="margin-top:26px; font-size:9px; color:#64748b; border-top:1px solid #cbd5e1; padding-top:8px; text-align:center;">{{ etab.mentions_legales|safe }}</div>
+    {% endif %}
+</body>
+</html>

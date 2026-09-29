@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Reçu {{ recu.numero }}</title>
+    <style>
+        @page { size: A5 landscape; margin: 10mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; color: #1e293b; }
+        .entete { display: flex; justify-content: space-between; border-bottom: 3px solid #15803d; padding-bottom: 8px; }
+        .etab { font-size: 17px; font-weight: 800; color: #15803d; }
+        h2 { text-align: center; letter-spacing: 2px; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #cbd5e1; padding: 5px 8px; }
+        th { background: #f0fdf4; text-align: left; }
+        .info { margin: 6px 0; }
+        .info td { border: none; padding: 1px 4px; }
+        .gras { font-weight: 700; }
+        .total { font-size: 13px; background: #f0fdf4; }
+        .pied { margin-top: 26px; display: flex; justify-content: space-between; font-size: 10px; }
+        .mention { margin-top: 18px; font-size: 8px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 6px; text-align: center; }
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" with petit=1 %}
+
+    <div class="entete">
+        <div style="display:flex; gap:10px;">
+            {% include "documents/_logos_en_tete.html" with hauteur=40 %}
+            <div>
+                <div class="etab">{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+                <div>Établissement d'enseignement{% if etab.adresse %} — {{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}</div>
+                <div>{% if etab.telephone %}Tél. {{ etab.telephone }} · {% endif %}IFU : {{ etab.ifu|default:"—" }}{% if etab.rccm %} · RCCM : {{ etab.rccm }}{% endif %}</div>
+            </div>
+        </div>
+        <div>Reçu N° <strong>{{ recu.numero }}</strong><br>{{ recu.date_emission|date:"d/m/Y H:i" }}</div>
+    </div>
+
+    <h2>REÇU DE PAIEMENT</h2>
+
+    <table class="info">
+        <tr><td class="gras">Élève :</td><td>{{ recu.paiement.inscription.eleve.nom }} {{ recu.paiement.inscription.eleve.prenoms }}</td>
+            <td class="gras">Matricule :</td><td>{{ recu.paiement.inscription.eleve.matricule }}</td></tr>
+        <tr><td class="gras">Classe :</td><td>{{ recu.paiement.inscription.classe.libelle }}</td>
+            <td class="gras">Année :</td><td>{{ recu.paiement.inscription.annee_scolaire }}</td></tr>
+        {% if tuteur %}
+        <tr><td class="gras">Payeur :</td><td>{{ tuteur.nom_complet }} ({{ tuteur.get_lien_parente_display }})</td>
+            <td class="gras">Tél. payeur :</td><td>{{ tuteur.telephone }}</td></tr>
+        {% endif %}
+        <tr><td class="gras">Mode :</td><td>{{ recu.paiement.get_mode_paiement_display }}</td>
+            <td class="gras">Référence :</td><td>{{ recu.paiement.reference|default:"—" }}</td></tr>
+        <tr><td class="gras">Encaissé par :</td><td colspan="3">{{ recu.paiement.encaisse_par.get_full_name|default:recu.paiement.encaisse_par|default:"—" }}</td></tr>
+    </table>
+
+    <table>
+        <thead><tr><th>Échéance</th><th class="centre">Montant imputé (FCFA)</th></tr></thead>
+        <tbody>
+            {% for imputation in imputations %}
+            <tr><td>{{ imputation.echeance.libelle }}</td><td class="centre">{{ imputation.montant_impute|floatformat:0 }}</td></tr>
+            {% endfor %}
+            <tr class="total">
+                <td class="gras">TOTAL RECU</td>
+                <td class="centre gras">{{ recu.paiement.montant|floatformat:0 }} FCFA</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p class="gras">Arrêté le présent reçu à la somme de : {{ montant_lettres }}.</p>
+
+    {% if situation and situation.solde is not None %}
+    <p>Situation du compte — Total dû : <strong>{{ situation.total_du|floatformat:0 }} FCFA</strong> · Payé : <strong>{{ situation.total_paye|floatformat:0 }} FCFA</strong> · Solde restant dû : <strong>{{ situation.solde|floatformat:0 }} FCFA</strong></p>
+    {% endif %}
+
+    <div class="pied">
+        <div>Le Caissier / La Caissière{% if etab.nom_comptable %}<br>{{ etab.nom_comptable }}{% endif %}<br>Cachet et signature</div>
+        <div>Merci de conserver ce reçu.</div>
+    </div>
+
+    {% if etab.mentions_legales %}
+    <div class="mention">{{ etab.mentions_legales|safe }}</div>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,124 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Bulletin — {{ eleve.matricule }}</title>
+    <style>
+        @page { size: A4; margin: 16mm 14mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; color: #1e293b; }
+        .entete { text-align: center; border-bottom: 3px solid #1d4ed8; padding-bottom: 8px; }
+        .etab { font-size: 20px; font-weight: 800; color: #1d4ed8; }
+        .sous-titre { font-size: 11px; color: #475569; }
+        .titre-doc { text-align: center; font-size: 15px; font-weight: 700; margin: 12px 0 8px; letter-spacing: 1px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #cbd5e1; padding: 5px 8px; }
+        th { background: #eff6ff; text-align: left; font-size: 10px; text-transform: uppercase; }
+        .carte { width: 100%; margin-bottom: 8px; }
+        .carte td { border: none; padding: 2px 8px; font-size: 11px; }
+        .gras { font-weight: 700; }
+        .centre { text-align: center; }
+        .synth { margin-top: 14px; }
+        .synth td { background: #f8fafc; font-size: 12px; }
+        .pied { margin-top: 44px; display: flex; justify-content: space-between; font-size: 10px; gap: 20px; }
+        .signature { text-align: center; width: 40%; }
+        .mention { margin-top: 30px; font-size: 9px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 8px; text-align: center; }
+        .appreciation { margin-top: 12px; font-size: 11px; }
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        {% include "documents/_logos_en_tete.html" with hauteur=50 %}
+        <div class="etab" style="margin-top:6px;">{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+        <div class="sous-titre">
+            {% if etab.sigle %}{{ etab.sigle }} · {% endif %}Établissement d'enseignement
+            {% if etab.adresse %} — {{ etab.adresse }}{% if etab.ville %}, {{ etab.ville }}{% endif %}{% endif %}
+            {% if etab.telephone %} · Tél. {{ etab.telephone }}{% endif %}
+        </div>
+    </div>
+
+    <div class="titre-doc">BULLETIN DE NOTES{% if est_annuel %} — RELEVÉ ANNUEL{% else %} — {{ bulletin.periode.libelle|upper }}{% endif %}</div>
+
+    <table class="carte">
+        <tr>
+            <td class="gras" style="width:110px">Élève :</td><td>{{ eleve.nom }} {{ eleve.prenoms }}</td>
+            <td class="gras" style="width:110px">Matricule :</td><td>{{ eleve.matricule }}</td>
+        </tr>
+        <tr>
+            <td class="gras">Sexe :</td><td>{{ eleve.get_sexe_display }}</td>
+            <td class="gras">Né(e) le :</td><td>{{ eleve.date_naissance|date:"d/m/Y" }}{% if eleve.lieu_naissance %} à {{ eleve.lieu_naissance }}{% endif %}</td>
+        </tr>
+        <tr>
+            <td class="gras">Classe :</td>
+            <td>{{ inscription.classe.libelle }}{% if inscription.classe.niveau.serie %} <span>(Série {{ inscription.classe.niveau.serie.code }})</span>{% endif %}</td>
+            <td class="gras">Effectif :</td><td>{{ inscription.classe.effectif_actuel }} élève(s)</td>
+        </tr>
+        <tr>
+            <td class="gras">Régime :</td><td>{{ eleve.get_regime_display }}</td>
+            <td class="gras">Année scolaire :</td><td>{{ inscription.annee_scolaire }}</td>
+        </tr>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width:34px">N°</th>
+                <th>Matières</th>
+                <th class="centre" style="width:60px">Coef.</th>
+                <th class="centre" style="width:150px">Notes (D / C)</th>
+                <th class="centre" style="width:80px">Moyenne / 20</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in lignes %}
+            <tr>
+                <td class="centre text-muted">{{ forloop.counter }}</td>
+                <td class="gras">{{ ligne.matiere.libelle }}</td>
+                <td class="centre">{{ ligne.coef }}</td>
+                <td class="centre">
+                    {% for note in ligne.notes %}{% if forloop.first %}{% else %} · {% endif %}{{ note.valeur }}{% endfor %}
+                </td>
+                <td class="centre gras">{{ ligne.moyenne }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="synth">
+        <tr>
+            <td class="gras">Moyenne générale :</td><td class="gras centre">{{ moyenne }} / 20</td>
+            <td class="gras">Rang :</td><td class="centre">{{ rang|default:"—" }}{% if stats_classe and stats_classe.effectif %} / {{ stats_classe.effectif }}{% endif %}</td>
+            <td class="gras">Mention :</td><td class="centre">{{ mention }}</td>
+        </tr>
+        {% if stats_classe and stats_classe.moyenne_classe is not None %}
+        <tr>
+            <td class="gras">Moyenne de la classe :</td><td class="centre">{{ stats_classe.moyenne_classe }}</td>
+            <td class="gras">Plus forte :</td><td class="centre">{{ stats_classe.plus_forte }}</td>
+            <td class="gras">Plus faible :</td><td class="centre">{{ stats_classe.plus_faible }}</td>
+        </tr>
+        {% endif %}
+    </table>
+
+    {% if bulletin.appreciation_generale %}
+    <div class="appreciation"><span class="gras">Appréciation générale :</span> {{ bulletin.appreciation_generale }}</div>
+    {% endif %}
+    {% if inscription.decision_fin_annee %}
+    <div class="appreciation"><span class="gras">Décision du conseil de classe :</span> {{ inscription.decision_fin_annee }}</div>
+    {% endif %}
+
+    <div class="pied">
+        <div class="signature">
+            <div>Le Directeur des études{% if etab.nom_censeur %}<br>{{ etab.nom_censeur }}{% endif %}</div>
+        </div>
+        <div class="signature">
+            <div>Le Chef d'établissement{% if etab.nom_directeur %}<br>{{ etab.nom_directeur }}{% endif %}</div>
+        </div>
+    </div>
+
+    {% if etab.mentions_legales %}
+    <div class="mention">{{ etab.mentions_legales|safe }}</div>
+    {% endif %}
+</body>
+</html>

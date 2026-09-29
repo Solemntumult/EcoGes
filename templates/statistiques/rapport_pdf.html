@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Rapport statistiques</title>
+    <style>
+        @page { size: A4; margin: 16mm; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10px; color: #1e293b; }
+        .entete { display: flex; justify-content: space-between; border-bottom: 3px solid #1d4ed8; padding-bottom: 8px; }
+        .etab { font-size: 18px; font-weight: 800; color: #1d4ed8; }
+        h3 { margin: 14px 0 6px; color: #1e3a8a; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        th, td { border: 1px solid #cbd5e1; padding: 4px 6px; }
+        th { background: #eff6ff; text-align: left; }
+    </style>
+</head>
+<body>
+    {% include "documents/_bande_republic.html" %}
+
+    <div class="entete">
+        <div style="display:flex; gap:10px;">
+            {% include "documents/_logos_en_tete.html" with hauteur=44 %}
+            <div>
+                <div class="etab">{{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</div>
+                <div>Rapport statistique — {% now "d/m/Y" %}</div>
+            </div>
+        </div>
+        <div>Taux de recouvrement : <strong>{{ recouvrement.taux }}%</strong></div>
+    </div>
+
+    <h3>Effectifs par classe</h3>
+    <table>
+        <thead><tr><th>Classe</th><th>Effectif</th></tr></thead>
+        <tbody>
+            {% for e in effectifs %}<tr><td>{{ e.libelle }}</td><td>{{ e.effectif }}</td></tr>{% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Effectifs par cycle</h3>
+    <table>
+        <thead><tr><th>Cycle</th><th>Garçons</th><th>Filles</th><th>Total</th></tr></thead>
+        <tbody>
+            {% for ligne in effectifs_cycles %}<tr><td>{{ ligne.cycle }}</td><td>{{ ligne.hommes }}</td><td>{{ ligne.femmes }}</td><td>{{ ligne.total }}</td></tr>{% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Recettes par mois</h3>
+    <table>
+        <thead><tr><th>Mois</th><th>Montant</th></tr></thead>
+        <tbody>
+            {% for mois, total in recettes.items %}<tr><td>{{ mois }}</td><td>{{ total }} F</td></tr>{% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Moyennes générales par classe</h3>
+    <table>
+        <thead><tr><th>Classe</th><th>Moyenne</th></tr></thead>
+        <tbody>
+            {% for m in moyennes %}<tr><td>{{ m.libelle }}</td><td>{{ m.moyenne }}</td></tr>{% endfor %}
+        </tbody>
+    </table>
+
+    <p style="margin-top:30px; text-align:right;">Document généré automatiquement — {{ etab.nom_officiel|default:"GESTION SCOLAIRE" }}</p>
+</body>
+</html>

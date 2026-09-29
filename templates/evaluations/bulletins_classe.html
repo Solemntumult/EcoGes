@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Bulletins{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header">
+        <h1 class="mb-0"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Génération des bulletins</h1>
+        <p class="text-muted mb-0 mt-1">Calcul automatique des moyennes pondérées, des rangs et des mentions (UC-22, UC-23).</p>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-4"><label class="form-label">Classe</label>{{ form.classe }}</div>
+                <div class="col-md-4"><label class="form-label">Période</label>{{ form.periode }}</div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100"><i class="bi bi-calculator me-1"></i>Générer</button>
+                </div>
+                {% if classe %}
+                <div class="col-md-2">
+                    <a href="{% url 'evaluations:bulletins_zip' %}?classe={{ classe.pk }}&periode={{ form.periode.value }}" class="btn btn-outline-success w-100">
+                        <i class="bi bi-file-earmark-zip me-1"></i>ZIP
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    {% if bulletins %}
+    <div class="card mt-3">
+        <div class="card-header fw-semibold">
+            {{ bulletins|length }} bulletin(s) pour {{ classe }} — {{ periode }}
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead><tr><th>Élève</th><th>Moyenne générale</th><th>Rang</th><th>Mention</th><th>PDF</th></tr></thead>
+                    <tbody>
+                        {% for bulletin in bulletins %}
+                        <tr>
+                            <td class="fw-semibold">{{ bulletin.inscription.eleve.nom }} {{ bulletin.inscription.eleve.prenoms }}</td>
+                            <td><strong>{{ bulletin.moyenne_generale }}</strong></td>
+                            <td>{{ bulletin.rang|default:"—" }}</td>
+                            <td>{{ bulletin.mention|default:"—" }}</td>
+                            <td>
+                                {% if bulletin.fichier_pdf %}
+                                <a href="{% url 'evaluations:telecharger_bulletin' bulletin.pk %}" class="btn btn-sm btn-outline-primary" target="_blank"><i class="bi bi-download"></i></a>
+                                {% else %}
+                                <span class="text-muted small">PDF indisponible (WeasyPrint)</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif classe %}
+    <div class="alert alert-info mt-3"><i class="bi bi-info-circle me-1"></i>Aucune note saisie pour cette classe/période — les bulletins ne peuvent pas être calculés.</div>
+    {% endif %}
+</div>
+{% endblock %}
