@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="page-header d-flex align-items-center gap-3">
-        <div class="avatar rounded-circle" style="width:56px;height:56px;font-size:1.2rem">{{ eleve.prenoms|first|upper }}{{ eleve.nom|first|upper }}</div>
+        <div class="avatar" style="width:56px;height:56px;font-size:1.2rem">{{ eleve.prenoms|first|upper }}{{ eleve.nom|first|upper }}</div>
         <div>
             <h1 class="mb-0">{{ eleve.nom }} {{ eleve.prenoms }}</h1>
             <div class="text-muted">{{ eleve.matricule }} — {{ eleve.get_regime_display }}</div>

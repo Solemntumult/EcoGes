@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Infirmerie & Santé Scolaire{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Infirmerie & Santé Scolaire</h1>
+            <p class="text-muted small mb-0">Registre confidentiel des consultations, soins d'urgence et fiches médicales</p>
+        </div>
+        <div>
+            <span class="badge bg-danger p-2 fs-6">
+                <i class="bi bi-heart-pulse me-1"></i> {{ total_visites }} consultations enregistrées
+            </span>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+            <span class="card-header-title">Derniers passages à l'infirmerie</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date & Heure</th>
+                            <th>Élève</th>
+                            <th>Motif</th>
+                            <th>Soins administrés</th>
+                            <th>Issue</th>
+                            <th>Parent prévenu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in passages %}
+                        <tr>
+                            <td class="text-muted small">{{ p.date_heure_entree|date:"d/m/Y H:i" }}</td>
+                            <td><strong>{{ p.eleve.nom }}</strong> {{ p.eleve.prenoms }}</td>
+                            <td>{{ p.motif }}</td>
+                            <td>{{ p.soins_administres|truncatechars:40 }}</td>
+                            <td>
+                                {% if p.issue == "RETOUR_CLASSE" %}
+                                <span class="badge bg-success">Retour classe</span>
+                                {% elif p.issue == "REPOS" %}
+                                <span class="badge bg-warning text-dark">Repos</span>
+                                {% elif p.issue == "RETOUR_DOMICILE" %}
+                                <span class="badge bg-primary">Domicile</span>
+                                {% else %}
+                                <span class="badge bg-danger">Évacuation</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if p.parent_prevenu %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Oui</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Non</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-shield-check fs-1 text-success opacity-50 d-block mb-2"></i>
+                                Aucun passage enregistré à l'infirmerie.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

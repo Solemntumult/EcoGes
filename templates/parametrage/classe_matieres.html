@@ -5,7 +5,7 @@
 <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1 class="mb-0"><i class="bi bi-sliders me-2 text-primary"></i>Coefficients — {{ classe.libelle }}</h1>
+            <h1 class="page-title mb-0">Coefficients — {{ classe.libelle }}</h1>
             <p class="text-muted mb-0 mt-1">
                 {{ classe.niveau.libelle }}
                 {% if classe.niveau.serie %}<span class="badge text-bg-primary ms-1">Série {{ classe.niveau.serie.code }} — {{ classe.niveau.serie.libelle }}</span>{% endif %}
@@ -80,7 +80,7 @@
     </div>
 
     <div class="card">
-        <div class="card-header fw-semibold"><i class="bi bi-plus-circle me-1"></i>Ajouter une matière à {{ classe.libelle }}</div>
+        <div class="card-header fw-semibold">Ajouter une matière à {{ classe.libelle }}</div>
         <div class="card-body">
             {% if form_ajout.non_field_errors %}<div class="alert alert-danger py-2">{{ form_ajout.non_field_errors }}</div>{% endif %}
             <form method="post" action="{% url 'parametrage:ajouter_matiere_classe' classe.pk %}" novalidate>

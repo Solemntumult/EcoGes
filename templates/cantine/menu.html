@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Cantine & Demi-pension{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Cantine & Restauration Scolaire</h1>
+            <p class="text-muted small mb-0">Menus équilibrés et suivi des inscriptions au réfectoire</p>
+        </div>
+        <div>
+            <span class="badge bg-success p-2 fs-6">
+                <i class="bi bi-people-fill me-1"></i> {{ inscrits_count }} élèves demi-pensionnaires
+            </span>
+        </div>
+    </div>
+
+    {% if menu %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold text-primary">
+                <i class="bi bi-calendar3 me-2"></i>Menu de la semaine du {{ menu.date_debut|date:"d F" }} au {{ menu.date_fin|date:"d F Y" }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md">
+                    <div class="card h-100 border-primary border-top border-3">
+                        <div class="card-header bg-light fw-bold text-center">Lundi</div>
+                        <div class="card-body small">{{ menu.lundi|linebreaksbr }}</div>
+                    </div>
+                </div>
+                <div class="col-md">
+                    <div class="card h-100 border-primary border-top border-3">
+                        <div class="card-header bg-light fw-bold text-center">Mardi</div>
+                        <div class="card-body small">{{ menu.mardi|linebreaksbr }}</div>
+                    </div>
+                </div>
+                <div class="col-md">
+                    <div class="card h-100 border-primary border-top border-3">
+                        <div class="card-header bg-light fw-bold text-center">Mercredi</div>
+                        <div class="card-body small">{{ menu.mercredi|linebreaksbr }}</div>
+                    </div>
+                </div>
+                <div class="col-md">
+                    <div class="card h-100 border-primary border-top border-3">
+                        <div class="card-header bg-light fw-bold text-center">Jeudi</div>
+                        <div class="card-body small">{{ menu.jeudi|linebreaksbr }}</div>
+                    </div>
+                </div>
+                <div class="col-md">
+                    <div class="card h-100 border-primary border-top border-3">
+                        <div class="card-header bg-light fw-bold text-center">Vendredi</div>
+                        <div class="card-body small">{{ menu.vendredi|linebreaksbr }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info shadow-sm">
+        <i class="bi bi-info-circle me-2"></i>Aucun menu n'a encore été publié pour cette semaine.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

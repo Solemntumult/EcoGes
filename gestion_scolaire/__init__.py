@@ -1,12 +1,16 @@
 """
 Point d'entrée du package de configuration Django.
-
-Sur Windows, la compilation de ``mysqlclient`` est souvent problématique.
-PyMySQL (déjà présent dans les dépendances) est un client MySQL pur Python
-compatible : on l'enregistre ici comme pilote MySQLdb via l'API officielle
-``install_as_MySQLdb()``.
 """
 
-import pymysql
+# Permet de s'assurer que l'application Celery est toujours importée
+# lorsque Django démarre, afin que les tâches partagées (@shared_task) l'utilisent.
+from .celery import app as celery_app
 
-pymysql.install_as_MySQLdb()
+__all__ = ("celery_app",)
+
+# --- Fallback PyMySQL pour MySQL sous Windows (décommenter si utilisation de MySQL) ---
+# try:
+#     import pymysql
+#     pymysql.install_as_MySQLdb()
+# except ImportError:
+#     pass

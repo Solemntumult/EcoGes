@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Admissions & Pré-inscriptions{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Admissions & Pré-inscriptions</h1>
+            <p class="text-muted small mb-0">Gestion des candidatures, examen des dossiers et tests de sélection</p>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-2">
+            <div class="d-flex gap-2 align-items-center overflow-auto">
+                <span class="text-muted small fw-bold">Filtrer :</span>
+                <a href="{% url 'admissions:liste' %}" class="btn btn-sm {% if not statut_filtre %}btn-primary{% else %}btn-outline-secondary{% endif %}">Tous</a>
+                {% for code, label in statuts %}
+                <a href="{% url 'admissions:liste' %}?statut={{ code }}" class="btn btn-sm {% if statut_filtre == code %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ label }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des demandes -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+            <span class="card-header-title">Dossiers de candidature reçus</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Candidat</th>
+                            <th>Niveau demandé</th>
+                            <th>Parent / Contact</th>
+                            <th>Date dépôt</th>
+                            <th>Statut</th>
+                            <th class="text-center">Pièces</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in demandes %}
+                        <tr>
+                            <td>
+                                <strong>{{ d.nom }} {{ d.prenoms }}</strong><br>
+                                <small class="text-muted">Né(e) le {{ d.date_naissance|date:"d/m/Y" }} | {{ d.get_sexe_display }}</small>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ d.niveau_souhaite.libelle }}</span></td>
+                            <td>
+                                <div>{{ d.nom_parent }}</div>
+                                <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ d.telephone_parent }}</small>
+                            </td>
+                            <td class="small text-muted">{{ d.date_soumission|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if d.statut == "RECUE" %}
+                                <span class="badge bg-secondary">Reçue</span>
+                                {% elif d.statut == "EN_EXAMEN" %}
+                                <span class="badge bg-warning text-dark">En examen</span>
+                                {% elif d.statut == "TEST_PROGRAMME" %}
+                                <span class="badge bg-info text-dark">Test convoqué</span>
+                                {% elif d.statut == "ADMIS" %}
+                                <span class="badge bg-success">Admis(e)</span>
+                                {% elif d.statut == "INSCRIT" %}
+                                <span class="badge bg-primary">Inscrit(e)</span>
+                                {% else %}
+                                <span class="badge bg-danger">Refusé(e)</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border">{{ d.pieces_jointes.count }} doc(s)</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 opacity-50 d-block mb-2"></i>
+                                Aucune demande d'admission pour ce filtre.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

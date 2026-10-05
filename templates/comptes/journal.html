@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="page-header">
-        <h1 class="mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Journal d'activité</h1>
+        <h1 class="page-title mb-0">Journal d'activité</h1>
         <p class="text-muted mb-0 mt-1">Historique des actions sensibles, filtrable.</p>
     </div>
 
@@ -28,7 +28,7 @@
                     <input type="date" name="date_fin" value="{{ date_fin }}" class="form-control form-control-sm">
                 </div>
                 <div class="col-md-2">
-                    <button class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> Filtrer</button>
+                    <button class="btn btn-primary btn-sm w-100">Filtrer</button>
                 </div>
             </form>
         </div>
@@ -36,7 +36,7 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-list-ul me-1"></i>{{ entrees.paginator.count }} entrée(s)</span>
+            <span class="card-header-title">{{ entrees.paginator.count }} entrée(s)</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">

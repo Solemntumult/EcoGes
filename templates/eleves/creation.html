@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="page-header">
-        <h1 class="mb-0"><i class="bi bi-person-plus me-2 text-primary"></i>Inscrire un nouvel élève</h1>
+        <h1 class="page-title mb-0">Inscrire un nouvel élève</h1>
         <p class="text-muted mb-0 mt-1">Année scolaire : <strong>{{ annee_courante }}</strong> — le matricule et l'échéancier sont générés automatiquement.</p>
     </div>
 
@@ -17,7 +17,7 @@
         <div class="row g-3">
             <div class="col-lg-8">
                 <div class="card">
-                    <div class="card-header fw-semibold"><i class="bi bi-person-vcard me-1"></i>Informations personnelles</div>
+                    <div class="card-header fw-semibold">Informations personnelles</div>
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6"><label class="form-label">Nom *</label>{{ form_eleve.nom }}{% if form_eleve.nom.errors %}<div class="text-danger small">{{ form_eleve.nom.errors }}</div>{% endif %}</div>
@@ -33,7 +33,7 @@
                 </div>
 
                 <div class="card mt-3">
-                    <div class="card-header fw-semibold"><i class="bi bi-people me-1"></i>Tuteurs / parents</div>
+                    <div class="card-header fw-semibold">Tuteurs / parents</div>
                     <div class="card-body">
                         {{ formset_tuteurs.management_form }}
                         {% for form in formset_tuteurs %}
@@ -58,7 +58,7 @@
 
             <div class="col-lg-4">
                 <div class="card">
-                    <div class="card-header fw-semibold"><i class="bi bi-journal-check me-1"></i>Inscription</div>
+                    <div class="card-header fw-semibold">Inscription</div>
                     <div class="card-body">
                         <div class="mb-3"><label class="form-label">Classe *</label>{{ form_inscription.classe }}{% if form_inscription.classe.errors %}<div class="text-danger small">{{ form_inscription.classe.errors }}</div>{% endif %}</div>
                         <div class="mb-3"><label class="form-label">Statut d'inscription</label>{{ form_inscription.statut_inscription }}</div>

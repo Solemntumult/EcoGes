@@ -1,137 +1,445 @@
 {% extends "base.html" %}
 {% block title %}Tableau de bord{% endblock %}
 
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-3 px-lg-4 py-4">
-    <div class="page-header d-flex justify-content-between align-items-center">
+    <!-- En-tête exécutif épuré (Zéro sticker) -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-3 mb-4 border-bottom">
         <div>
-            <h1 class="mb-0"><i class="bi bi-speedometer2 me-2 text-primary"></i>Tableau de bord</h1>
-            <p class="text-muted mb-0 mt-1">
-                Bonjour {{ user.get_full_name|default:user.username }}
-                {% if annee_courante %} — Année scolaire <strong>{{ annee_courante }}</strong>{% endif %}
+            <h1 class="page-title">Tableau de bord</h1>
+            <p class="page-subtitle mb-0">
+                Session active de <strong>{{ user.get_full_name|default:user.username }}</strong>
+                {% if annee_courante %} · Année scolaire <strong>{{ annee_courante }}</strong>{% endif %}
+                · {{ aujourdhui|date:"l d F Y"|capfirst }}
             </p>
         </div>
-        <span class="badge badge-soft-primary p-2 fs-6"><i class="bi bi-person-badge me-1"></i>{{ user.get_role_display }}</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-soft-primary px-3 py-2 fs-6">{{ user.get_role_display }}</span>
+            <a href="{% url 'statistiques:dashboard' %}" class="btn btn-outline-secondary btn-sm">Rapports & Pilotage</a>
+        </div>
     </div>
 
-    <div class="row g-3 mt-1">
+    <!-- Grille de métriques KPI exécutives (Zéro stickers) -->
+    <div class="row g-3">
         {% if effectifs_actifs is not None %}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-people-fill"></i></div>
-                    <div><div class="stat-valeur">{{ effectifs_actifs }}</div><div class="stat-libelle">Élèves actifs</div></div>
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Élèves actifs</span>
+                </div>
+                <div class="kpi-value">{{ effectifs_actifs }}</div>
+                <div class="kpi-meta">
+                    <span>{{ nb_inscriptions|default:0 }} inscription(s) validée(s)</span>
                 </div>
             </div>
         </div>
         {% endif %}
+
         {% if nb_classes is not None %}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-door-open-fill"></i></div>
-                    <div><div class="stat-valeur">{{ nb_classes }}</div><div class="stat-libelle">Classes</div></div>
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Classes</span>
+                </div>
+                <div class="kpi-value">{{ nb_classes }}</div>
+                <div class="kpi-meta">
+                    <span>Groupes pédagogiques</span>
                 </div>
             </div>
         </div>
         {% endif %}
-        {% if nb_inscriptions is not None %}
-        <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-info bg-opacity-10 text-info"><i class="bi bi-journal-text"></i></div>
-                    <div><div class="stat-valeur">{{ nb_inscriptions }}</div><div class="stat-libelle">Inscriptions</div></div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+
         {% if taux_recouvrement is not None %}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-piggy-bank-fill"></i></div>
-                    <div><div class="stat-valeur">{{ taux_recouvrement }}%</div><div class="stat-libelle">Taux de recouvrement</div></div>
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Recouvrement</span>
+                    <span class="fw-semibold text-{% if taux_recouvrement >= 75 %}success{% elif taux_recouvrement >= 50 %}warning{% else %}danger{% endif %}">{{ taux_recouvrement }}%</span>
+                </div>
+                <div class="kpi-value">{{ taux_recouvrement }}%</div>
+                <div class="kpi-progress">
+                    <div class="kpi-progress-bar bg-{% if taux_recouvrement >= 75 %}success{% elif taux_recouvrement >= 50 %}warning{% else %}danger{% endif %}" style="width: {{ taux_recouvrement }}%"></div>
+                </div>
+                <div class="kpi-meta mt-2">
+                    <span>{{ nb_impayes|default:0 }} impayé(s) restant(s)</span>
                 </div>
             </div>
         </div>
         {% endif %}
-        {% if nb_impayes is not None %}
-        <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-exclamation-octagon-fill"></i></div>
-                    <div><div class="stat-valeur">{{ nb_impayes }}</div><div class="stat-libelle">Échéances impayées</div></div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+
         {% if encaissements_jour is not None %}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-cash-stack"></i></div>
-                    <div><div class="stat-valeur">{{ encaissements_jour }} F</div><div class="stat-libelle">Encaissé aujourd'hui</div></div>
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Encaissé ce jour</span>
+                </div>
+                <div class="kpi-value text-success">{{ encaissements_jour|floatformat:0 }} F</div>
+                <div class="kpi-meta">
+                    <span>Recettes du jour</span>
                 </div>
             </div>
         </div>
         {% endif %}
-        {% if nb_bulletins is not None %}
+
+        {% if absents_jour is not None %}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-file-earmark-text-fill"></i></div>
-                    <div><div class="stat-valeur">{{ nb_bulletins }}</div><div class="stat-libelle">Bulletins générés</div></div>
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Assiduité du jour</span>
+                </div>
+                <div class="kpi-value {% if absents_jour > 0 %}text-danger{% endif %}">{{ absents_jour }}</div>
+                <div class="kpi-meta">
+                    <span>Absent(s) · {{ retards_jour|default:0 }} retard(s)</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if admissions_attente is not None %}
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Admissions</span>
+                </div>
+                <div class="kpi-value {% if admissions_attente > 0 %}text-primary{% endif %}">{{ admissions_attente }}</div>
+                <div class="kpi-meta">
+                    <span>Dossier(s) à examiner</span>
+                </div>
+            </div>
+        </div>
+        {% elif nb_bulletins is not None %}
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Bulletins</span>
+                </div>
+                <div class="kpi-value">{{ nb_bulletins }}</div>
+                <div class="kpi-meta">
+                    <span>Évaluations générées</span>
                 </div>
             </div>
         </div>
         {% endif %}
     </div>
 
-    {% if mes_classes %}
-    <div class="card mt-4">
-        <div class="card-header"><i class="bi bi-calendar-check me-1"></i>Mes classes ({{ annee_courante }})</div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead><tr><th>Classe</th><th>Effectif actuel</th><th>Emploi du temps</th><th>Saisir des notes</th></tr></thead>
-                    <tbody>
-                        {% for classe in mes_classes %}
-                        <tr>
-                            <td class="fw-semibold">{{ classe.libelle }}</td>
-                            <td>{{ classe.effectif_actuel }} élèves</td>
-                            <td><a href="{% url 'personnel:edt_classe' classe.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-calendar-week"></i> Voir</a></td>
-                            <td><a href="{% url 'evaluations:par_classe' classe.pk %}" class="btn btn-sm btn-outline-success"><i class="bi bi-pencil-square"></i> Notes</a></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Section Graphiques & Pilotage (Si données financières ou administratives) -->
+    {% if total_du or classes_apercu %}
+    <div class="row g-3 mt-1">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header">
+                    <span class="card-header-title">Répartition des effectifs par classe</span>
+                    <span class="card-header-badge">Effectif réel actuel</span>
+                </div>
+                <div class="card-body">
+                    {% if chart_classes_labels %}
+                    <canvas id="chartClasses" height="110"></canvas>
+                    {% else %}
+                    <div class="py-5 text-center text-muted">
+                        Aucune classe avec effectif configurée pour l'année en cours.
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
-    {% endif %}
-
-    {% if user.role == 'COMPTABLE' %}
-    <div class="row mt-4 g-3">
-        <div class="col-md-6">
+        <div class="col-lg-4">
             <div class="card h-100">
-                <div class="card-header"><i class="bi bi-wallet2 me-1"></i>Situation financière globale</div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between border-bottom py-2"><span class="text-muted">Total dû</span><strong>{{ total_du }} F</strong></div>
-                    <div class="d-flex justify-content-between border-bottom py-2"><span class="text-muted">Total encaissé</span><strong class="text-success">{{ total_paye }} F</strong></div>
-                    <div class="d-flex justify-content-between py-2"><span class="text-muted">Reste à recouvrer</span><strong class="text-danger">{{ reste_du }} F</strong></div>
-                    <a href="{% url 'finances:impayes' %}" class="btn btn-outline-danger btn-sm mt-2"><i class="bi bi-exclamation-triangle me-1"></i>Gérer les impayés</a>
+                <div class="card-header">
+                    <span class="card-header-title">Santé financière globale</span>
+                    <span class="card-header-badge">Recouvrement</span>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted small">Total attendu (échéanciers)</span>
+                            <span class="fw-bold">{{ total_du|default:0|floatformat:0 }} F</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted small">Total encaissé</span>
+                            <span class="fw-bold text-success">{{ total_paye|default:0|floatformat:0 }} F</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2">
+                            <span class="text-muted small">Reste à recouvrer</span>
+                            <span class="fw-bold text-danger">{{ reste_du|default:0|floatformat:0 }} F</span>
+                        </div>
+                    </div>
+                    {% if total_du > 0 %}
+                    <div class="pt-2 text-center" style="max-height: 140px;">
+                        <canvas id="chartFinances" height="120"></canvas>
+                    </div>
+                    {% endif %}
+                    <div class="pt-2 border-top mt-3">
+                        <a href="{% url 'finances:impayes' %}" class="btn btn-outline-danger btn-sm w-100">Consulter les relances d'impayés</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     {% endif %}
 
-    {% if user.role == 'ENSEIGNANT' and not mes_classes %}
-    <div class="alert alert-info mt-4">
-        <i class="bi bi-info-circle me-1"></i>
-        Aucune affectation de classe n'a encore été enregistrée pour votre compte sur l'année en cours.
-        Contactez l'administration si nécessaire.
+    <!-- Section Opérations & Navigation Rapide -->
+    <div class="row g-3 mt-1">
+        <!-- Colonne Principale : Données opérationnelles -->
+        <div class="col-lg-8">
+            {% if mes_classes %}
+            <!-- Vue Enseignant : Mes Classes -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <span class="card-header-title">Mes classes assignées</span>
+                    <span class="card-header-badge">{{ mes_classes|length }} classe(s)</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Classe</th>
+                                    <th>Effectif</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for classe in mes_classes %}
+                                <tr>
+                                    <td class="fw-semibold">{{ classe.libelle }}</td>
+                                    <td>{{ classe.effectif_actuel }} élèves</td>
+                                    <td class="text-end">
+                                        <a href="{% url 'personnel:edt_classe' classe.pk %}" class="btn btn-sm btn-outline-primary">Emploi du temps</a>
+                                        <a href="{% url 'evaluations:par_classe' classe.pk %}" class="btn btn-sm btn-outline-success">Saisir notes</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if classes_apercu %}
+            <!-- Aperçu des Classes & Niveaux -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <span class="card-header-title">Effectifs par classe</span>
+                    <a href="{% url 'parametrage:classes' %}" class="btn btn-sm btn-outline-secondary">Gérer les classes</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Classe</th>
+                                    <th>Niveau</th>
+                                    <th>Inscrits</th>
+                                    <th>Capacité</th>
+                                    <th class="text-end">Fiche</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cl in classes_apercu %}
+                                <tr>
+                                    <td class="fw-bold">{{ cl.libelle }}</td>
+                                    <td><span class="badge badge-soft-secondary">{{ cl.niveau.nom|default:"-" }}</span></td>
+                                    <td><span class="fw-semibold">{{ cl.nb_eleves|default:cl.effectif_actuel }}</span> élèves</td>
+                                    <td>{{ cl.capacite_max|default:"Illimitée" }}</td>
+                                    <td class="text-end">
+                                        <a href="{% url 'eleves:liste' %}?classe={{ cl.pk }}" class="btn btn-sm btn-outline-primary">Voir la liste</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if derniers_paiements %}
+            <!-- Derniers Règlements Validés -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-header-title">Derniers règlements validés</span>
+                    <a href="{% url 'finances:etats_caisse' %}" class="btn btn-sm btn-outline-secondary">Journal de caisse</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Reçu N°</th>
+                                    <th>Élève</th>
+                                    <th>Date</th>
+                                    <th>Mode</th>
+                                    <th class="text-end">Montant</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in derniers_paiements %}
+                                <tr>
+                                    <td class="font-monospace small fw-bold">{{ p.numero_recu|default:p.id }}</td>
+                                    <td>
+                                        <a href="{% url 'eleves:detail' p.inscription.eleve.pk %}" class="text-decoration-none fw-semibold">
+                                            {{ p.inscription.eleve.nom }} {{ p.inscription.eleve.prenoms }}
+                                        </a>
+                                        <span class="text-muted small d-block">{{ p.inscription.classe.libelle }}</span>
+                                    </td>
+                                    <td class="text-muted small">{{ p.date_paiement|date:"d/m/Y H:i" }}</td>
+                                    <td><span class="badge badge-soft-primary">{{ p.get_mode_paiement_display }}</span></td>
+                                    <td class="text-end fw-bold text-success">{{ p.montant|floatformat:0 }} F</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Colonne Latérale : Raccourcis Métier & Flux d'Activité -->
+        <div class="col-lg-4">
+            <!-- Raccourcis Métier sans stickers -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <span class="card-header-title">Actions rapides</span>
+                </div>
+                <div class="card-body p-2 d-flex flex-column gap-2">
+                    <a href="{% url 'eleves:creation' %}" class="quick-action-link">
+                        <span>Inscrire un nouvel élève</span>
+                        <span class="text-muted small">Nouveau dossier</span>
+                    </a>
+                    <a href="{% url 'finances:encaisser' %}" class="quick-action-link">
+                        <span>Encaisser un paiement</span>
+                        <span class="text-muted small">Reçu de caisse</span>
+                    </a>
+                    <a href="{% url 'viescolaire:tableau_bord' %}" class="quick-action-link">
+                        <span>Feuille d'appel & Présences</span>
+                        <span class="text-muted small">Pointage HTMX</span>
+                    </a>
+                    <a href="{% url 'evaluations:mes_evaluations' %}" class="quick-action-link">
+                        <span>Évaluations & Notes</span>
+                        <span class="text-muted small">Saisie semestrielle</span>
+                    </a>
+                    <a href="{% url 'documents:accueil' %}" class="quick-action-link">
+                        <span>Documents & Certificats</span>
+                        <span class="text-muted small">Éditeur WeasyPrint</span>
+                    </a>
+                    <a href="{% url 'admissions:liste' %}" class="quick-action-link">
+                        <span>Candidatures d'admission</span>
+                        <span class="text-muted small">Pré-inscriptions</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Journal d'activité récent sans stickers -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-header-title">Journal d'activité récent</span>
+                    <a href="{% url 'journal' %}" class="btn btn-sm btn-outline-secondary">Historique complet</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if dernieres_activites %}
+                    <div>
+                        {% for log in dernieres_activites %}
+                        <div class="feed-item">
+                            <div class="feed-action">
+                                <span class="fw-semibold text-dark">{{ log.utilisateur.get_full_name|default:log.utilisateur.username }}</span>
+                                <span class="text-muted">· {{ log.action }}</span>
+                                {% if log.detail %}
+                                <div class="text-muted small text-truncate" style="max-width: 240px;">{{ log.detail }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="feed-meta">{{ log.date_heure|timesince }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="p-3 text-center text-muted small">
+                        Aucune activité tracée récemment.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
-    {% endif %}
 </div>
+
+{% if chart_classes_labels or total_du %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Chart.defaults.font.family = '"Inter", system-ui, -apple-system, sans-serif';
+    Chart.defaults.color = '#64748b';
+
+    {% if chart_classes_labels %}
+    var ctxClasses = document.getElementById('chartClasses');
+    if (ctxClasses) {
+        new Chart(ctxClasses, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_classes_labels|safe }},
+                datasets: [{
+                    label: 'Nombre d\'élèves',
+                    data: {{ chart_classes_data|safe }},
+                    backgroundColor: '#1e3a8a',
+                    borderColor: '#1e3a8a',
+                    borderWidth: 1,
+                    borderRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: { color: '#f1f5f9' }
+                    }
+                }
+            }
+        });
+    }
+    {% endif %}
+
+    {% if total_du > 0 %}
+    var ctxFin = document.getElementById('chartFinances');
+    if (ctxFin) {
+        new Chart(ctxFin, {
+            type: 'doughnut',
+            data: {
+                labels: ['Encaissé', 'Reste à recouvrer'],
+                datasets: [{
+                    data: [{{ total_paye|default:0|floatformat:0 }}, {{ reste_du|default:0|floatformat:0 }}],
+                    backgroundColor: ['#059669', '#dc2626'],
+                    borderWidth: 0,
+                    borderRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 8 }
+                    }
+                },
+                cutout: '72%'
+            }
+        });
+    }
+    {% endif %}
+});
+</script>
+{% endif %}
 {% endblock %}

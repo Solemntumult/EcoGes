@@ -83,3 +83,138 @@ class Bulletin(models.Model):
     def __str__(self):
         periode_str = "Annuel" if self.est_annuel else str(self.periode)
         return f"Bulletin {self.inscription.eleve} - {periode_str}"
+
+
+# ==============================================================================
+# Spécificités Primaire : Évaluation par compétences (APC) & Garderie
+# ==============================================================================
+
+class CompetenceAPC(models.Model):
+    """Compétence du référentiel pédagogique par compétences (APC - Primaire)."""
+    matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name="competences_apc")
+    niveau = models.ForeignKey("parametrage.Niveau", on_delete=models.CASCADE, related_name="competences_apc")
+    code = models.CharField(max_length=20, help_text="Ex. C1.1, C2.3")
+    libelle = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name = "Compétence (APC)"
+        verbose_name_plural = "Compétences (APC)"
+        ordering = ["niveau", "matiere", "code"]
+
+    def __str__(self):
+        return f"[{self.code}] {self.libelle} ({self.matiere})"
+
+
+class EvaluationCompetence(models.Model):
+    """Évaluation d'une compétence pour un élève (Livret d'acquisitions)."""
+    class NiveauMaitrise(models.TextChoices):
+        NA = "NA", "Non Acquis"
+        ECA = "ECA", "En Cours d'Acquisition"
+        A = "A", "Acquis"
+        E = "E", "Expert"
+
+    inscription = models.ForeignKey(Inscription, on_delete=models.CASCADE, related_name="evaluations_competences")
+    competence = models.ForeignKey(CompetenceAPC, on_delete=models.CASCADE, related_name="evaluations")
+    periode = models.ForeignKey(Periode, on_delete=models.CASCADE)
+    niveau_maitrise = models.CharField(max_length=5, choices=NiveauMaitrise.choices)
+    observations = models.CharField(max_length=255, blank=True)
+    date_evaluation = models.DateField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Évaluation de compétence"
+        verbose_name_plural = "Évaluations de compétences"
+        unique_together = ("inscription", "competence", "periode")
+
+    def __str__(self):
+        return f"{self.inscription.eleve} - {self.competence.code} : {self.get_niveau_maitrise_display()}"
+
+
+class InscriptionGarderie(models.Model):
+    """Inscription aux activités périscolaires / garderie / études surveillées."""
+    class Formule(models.TextChoices):
+        MATIN = "MATIN", "Garderie matinale (6h30 - 7h30)"
+        SOIR = "SOIR", "Étude surveillée / Garderie du soir (17h - 18h30)"
+        COMPLETE = "COMPLETE", "Garderie complète (Matin & Soir)"
+
+    eleve = models.ForeignKey("eleves.Eleve", on_delete=models.CASCADE, related_name="inscriptions_garderie")
+    annee_scolaire = models.ForeignKey("parametrage.AnneeScolaire", on_delete=models.CASCADE)
+    formule = models.CharField(max_length=15, choices=Formule.choices)
+    tarif_mensuel = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    actif = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Inscription Garderie / Périscolaire"
+        verbose_name_plural = "Inscriptions Garderie / Périscolaire"
+
+    def __str__(self):
+        return f"{self.eleve} - Garderie {self.get_formule_display()}"
+
+
+# ==============================================================================
+# Spécificités Collège : Conseils de classe, Mentions & Délégués
+# ==============================================================================
+
+class ConseilDeClasse(models.Model):
+    """Conseil de classe trimestriel ou semestriel."""
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name="conseils_de_classe")
+    periode = models.ForeignKey(Periode, on_delete=models.CASCADE, related_name="conseils_de_classe")
+    date_conseil = models.DateField()
+    president = models.ForeignKey(
+        "comptes.Utilisateur", on_delete=models.SET_NULL, null=True, related_name="conseils_presides"
+    )
+    secretaire = models.ForeignKey(
+        "comptes.Utilisateur", on_delete=models.SET_NULL, null=True, blank=True, related_name="conseils_secretaires"
+    )
+    synthese_generale = models.TextField(blank=True, help_text="Bilan global de la classe sur la période")
+
+    class Meta:
+        verbose_name = "Conseil de classe"
+        verbose_name_plural = "Conseils de classe"
+        unique_together = ("classe", "periode")
+
+    def __str__(self):
+        return f"Conseil de classe : {self.classe} ({self.periode})"
+
+
+class MentionConseil(models.Model):
+    """Distinctions et avis attribués lors du conseil de classe."""
+    class TypeMention(models.TextChoices):
+        FELICITATIONS = "FELICITATIONS", "Félicitations du conseil"
+        TABLEAU_HONNEUR = "TABLEAU_HONNEUR", "Tableau d'honneur"
+        ENCOURAGEMENTS = "ENCOURAGEMENTS", "Encouragements"
+        AVERTISSEMENT_TRAVAIL = "AVERT_TRAVAIL", "Avertissement travail"
+        AVERTISSEMENT_CONDUITE = "AVERT_CONDUITE", "Avertissement conduite"
+
+    conseil = models.ForeignKey(ConseilDeClasse, on_delete=models.CASCADE, related_name="mentions")
+    inscription = models.ForeignKey(Inscription, on_delete=models.CASCADE, related_name="mentions_conseil")
+    type_mention = models.CharField(max_length=20, choices=TypeMention.choices)
+    avis = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = "Mention / Avis du conseil"
+        verbose_name_plural = "Mentions / Avis du conseil"
+        unique_together = ("conseil", "inscription")
+
+    def __str__(self):
+        return f"{self.inscription.eleve} : {self.get_type_mention_display()}"
+
+
+class DelegueClasse(models.Model):
+    """Délégués d'élèves élus pour la classe."""
+    class Role(models.TextChoices):
+        TITULAIRE = "TITULAIRE", "Délégué(e) titulaire"
+        SUPPLEANT = "SUPPLEANT", "Délégué(e) suppléant(e)"
+
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name="delegues")
+    annee_scolaire = models.ForeignKey("parametrage.AnneeScolaire", on_delete=models.CASCADE)
+    eleve = models.ForeignKey("eleves.Eleve", on_delete=models.CASCADE, related_name="mandats_delegue")
+    type_delegue = models.CharField(max_length=15, choices=Role.choices, default=Role.TITULAIRE)
+
+    class Meta:
+        verbose_name = "Délégué de classe"
+        verbose_name_plural = "Délégués de classe"
+        unique_together = ("classe", "annee_scolaire", "eleve")
+
+    def __str__(self):
+        return f"{self.eleve} ({self.get_type_delegue_display()} - {self.classe})"
+

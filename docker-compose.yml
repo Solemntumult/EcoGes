@@ -1,0 +1,90 @@
+services:
+  # Base de données relationnelle PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: ecoges_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-gestion_scolaire}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-gestion_scolaire}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Broker de messages & cache Redis
+  redis:
+    image: redis:7-alpine
+    container_name: ecoges_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Application Web Django
+  web:
+    build: .
+    container_name: ecoges_web
+    restart: always
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_NAME=${DB_NAME:-gestion_scolaire}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      - DJANGO_DEBUG=True
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Worker Celery pour les tâches asynchrones (PDF, e-mails massifs)
+  celery_worker:
+    build: .
+    container_name: ecoges_celery
+    restart: always
+    command: celery -A gestion_scolaire worker -l info
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+    environment:
+      - DB_NAME=${DB_NAME:-gestion_scolaire}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:

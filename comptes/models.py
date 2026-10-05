@@ -17,9 +17,12 @@ class Utilisateur(AbstractUser):
         COMPTABLE = "COMPTABLE", "Comptable / Caissier(ère)"
         ENSEIGNANT = "ENSEIGNANT", "Enseignant"
         PARENT = "PARENT", "Parent / Élève"
+        SURVEILLANT = "SURVEILLANT", "Surveillant général / Vie scolaire"
+        INFIRMIER = "INFIRMIER", "Infirmerie / Santé scolaire"
+        RESPONSABLE_CANTINE = "RESPONSABLE_CANTINE", "Responsable cantine / Intendance"
         SUPERADMIN = "SUPERADMIN", "Super-administrateur technique"
 
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.SECRETARIAT)
+    role = models.CharField(max_length=25, choices=Role.choices, default=Role.SECRETARIAT)
     telephone = models.CharField(max_length=30, blank=True)
     actif = models.BooleanField(default=True)
     date_creation = models.DateTimeField(auto_now_add=True)

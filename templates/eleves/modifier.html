@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="page-header">
-        <h1 class="mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>Modifier le dossier — {{ eleve }}</h1>
+        <h1 class="page-title mb-0">Modifier le dossier — {{ eleve }}</h1>
     </div>
     <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}

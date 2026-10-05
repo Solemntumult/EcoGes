@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="page-header">
-        <h1 class="mb-0"><i class="bi bi-building me-2 text-primary"></i>Paramètres de l'établissement</h1>
+        <h1 class="page-title mb-0">Paramètres de l'établissement</h1>
         <p class="text-muted mb-0 mt-1">
             Saisis une seule fois, ces informations apparaissent sur tous les documents générés
             (bulletins, factures, reçus, certificats, cartes scolaires...) : logo, nom officiel,
@@ -17,7 +17,7 @@
         <div class="row g-3">
             <div class="col-lg-8">
                 <div class="card mb-3">
-                    <div class="card-header fw-semibold"><i class="bi bi-info-circle me-1"></i>Identité & coordonnées</div>
+                    <div class="card-header fw-semibold">Identité & coordonnées</div>
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-8"><label class="form-label">Nom officiel</label>{{ form.nom_officiel }}</div>
@@ -37,7 +37,7 @@
                 </div>
 
                 <div class="card mb-3">
-                    <div class="card-header fw-semibold"><i class="bi bi-images me-1"></i>Logos de l'établissement <span class="badge text-bg-light border">plusieurs possibles</span></div>
+                    <div class="card-header fw-semibold">Logos de l'établissement <span class="badge text-bg-light border">plusieurs possibles</span></div>
                     <div class="card-body">
                         <p class="small text-muted">
                             Ajoutez autant de logos que nécessaire — logo de l'État / ministère de tutelle,
@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="card mb-3">
-                    <div class="card-header fw-semibold"><i class="bi bi-bank me-1"></i>Statut légal & fiscal</div>
+                    <div class="card-header fw-semibold">Statut légal & fiscal</div>
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-4"><label class="form-label">Statut juridique</label>{{ form.statut_juridique }}</div>
@@ -104,13 +104,13 @@
                             <div class="col-md-6"><label class="form-label">Régime fiscal</label>{{ form.regime_fiscal }}</div>
                         </div>
                         <div class="small text-muted mt-2">
-                            <i class="bi bi-info-circle me-1"></i>L'IFU est obligatoire sur les factures au Bénin — il sera affiché sur l'en-tête des factures et reçus.
+                            L'IFU est obligatoire sur les factures au Bénin — il sera affiché sur l'en-tête des factures et reçus.
                         </div>
                     </div>
                 </div>
 
                 <div class="card mb-3">
-                    <div class="card-header fw-semibold"><i class="bi bi-pen me-1"></i>Signataires (signature manuscrite après impression)</div>
+                    <div class="card-header fw-semibold">Signataires (signature manuscrite après impression)</div>
                     <div class="card-body">
                         <p class="small text-muted">Les PDF affichent le nom et la fonction du signataire en zone de signature ; vous imprimez puis signez et tamponnez à la main.</p>
                         <div class="row g-3">
@@ -122,7 +122,7 @@
                 </div>
 
                 <div class="card mb-3">
-                    <div class="card-header fw-semibold"><i class="bi bi-journal-text me-1"></i>Mentions légales & certifications</div>
+                    <div class="card-header fw-semibold">Mentions légales & certifications</div>
                     <div class="card-body">
                         <div class="mb-3">
                             <label class="form-label">Mentions légales (pied de page des documents)</label>
@@ -144,7 +144,7 @@
 
             <div class="col-lg-4">
                 <div class="card">
-                    <div class="card-header fw-semibold"><i class="bi bi-eye me-1"></i>Aperçu de l'en-tête</div>
+                    <div class="card-header fw-semibold">Aperçu de l'en-tête</div>
                     <div class="card-body">
                         <div class="border rounded p-3 text-center bg-light">
                             {% if logos_entete %}

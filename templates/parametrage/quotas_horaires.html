@@ -5,7 +5,7 @@
 <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1 class="mb-0"><i class="bi bi-bar-chart me-2 text-primary"></i>Quotas horaires — {{ classe.libelle }}</h1>
+            <h1 class="page-title mb-0">Quotas horaires — {{ classe.libelle }}</h1>
             <p class="text-muted mb-0 mt-1">Définissez le nombre d'heures de cours par semaine pour chaque matière de cette classe.</p>
         </div>
         <a href="{% url 'parametrage:classe_matieres' classe.pk %}" class="btn btn-outline-secondary">
@@ -16,7 +16,7 @@
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="card">
-                <div class="card-header fw-semibold"><i class="bi bi-list-check me-1"></i>Quotas définis</div>
+                <div class="card-header fw-semibold">Quotas définis</div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
@@ -49,7 +49,7 @@
 
         <div class="col-lg-5">
             <div class="card">
-                <div class="card-header fw-semibold"><i class="bi bi-plus-circle me-1"></i>Ajouter un quota</div>
+                <div class="card-header fw-semibold">Ajouter un quota</div>
                 <div class="card-body">
                     <form method="post" novalidate>
                         {% csrf_token %}

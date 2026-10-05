@@ -5,6 +5,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Gestion Scolaire{% endblock %} — Gestion Scolaire</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="{% static 'css/app.css' %}" rel="stylesheet">
@@ -33,7 +36,7 @@
         </nav>
         <div class="sidebar-user">
             <div class="d-flex align-items-center gap-2">
-                <div class="avatar rounded-circle">{{ user.first_name|default:user.username|first|upper }}{{ user.last_name|first|upper }}</div>
+                <div class="avatar">{{ user.first_name|default:user.username|first|upper }}{{ user.last_name|first|upper }}</div>
                 <div class="flex-grow-1 overflow-hidden">
                     <div class="fw-semibold text-truncate">{{ user.get_full_name|default:user.username }}</div>
                     <div class="small text-muted text-truncate">{{ user.get_role_display }}</div>
@@ -65,7 +68,7 @@
             <div class="offcanvas-body">
                 <ul class="nav flex-column gap-1">
                     {% for item in menu_app %}
-                    <li><a class="nav-link rounded {% if request.path == item.href %}active bg-primary text-white{% endif %}"
+                    <li><a class="nav-link {% if request.path == item.href %}active bg-primary text-white{% endif %}"
                            href="{{ item.href }}"><i class="bi bi-{{ item.icone }}"></i> {{ item.titre }}</a></li>
                     {% endfor %}
                 </ul>
@@ -89,6 +92,14 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- HTMX 2.x pour les interactions dynamiques asynchrones -->
+<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmReRlChPQCver52wdnK6PFeUbNmNBoV6eyC4ww" crossorigin="anonymous"></script>
+<script>
+    // Injection automatique du jeton CSRF Django dans toutes les requêtes HTMX
+    document.addEventListener('htmx:configRequest', function(evt) {
+        evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    });
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

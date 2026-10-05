@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Feuille d'appel — {{ classe.libelle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a href="{% url 'viescolaire:tableau_bord' %}" class="btn btn-sm btn-outline-secondary mb-2">
+                <i class="bi bi-arrow-left"></i> Retour au tableau de bord
+            </a>
+            <h1 class="h3 mb-0">Feuille d'appel : {{ classe.libelle }}</h1>
+            <p class="text-muted small mb-0">Niveau : {{ classe.niveau.libelle }} | Créneau : {{ creneau }}</p>
+        </div>
+        <div>
+            <form method="get" class="d-flex gap-2">
+                <input type="date" name="date" class="form-control form-control-sm" value="{{ date_appel|date:'Y-m-d' }}">
+                <select name="creneau" class="form-select form-select-sm">
+                    <option value="Matin" {% if creneau == "Matin" %}selected{% endif %}>Matin</option>
+                    <option value="Après-midi" {% if creneau == "Après-midi" %}selected{% endif %}>Après-midi</option>
+                    <option value="08:00 - 10:00" {% if creneau == "08:00 - 10:00" %}selected{% endif %}>08:00 - 10:00</option>
+                    <option value="10:00 - 12:00" {% if creneau == "10:00 - 12:00" %}selected{% endif %}>10:00 - 12:00</option>
+                    <option value="15:00 - 17:00" {% if creneau == "15:00 - 17:00" %}selected{% endif %}>15:00 - 17:00</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary">Changer</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold">Pointage du {{ date_appel|date:"l d F Y" }}</h6>
+            <span class="badge bg-primary">{{ lignes|length }} élèves</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>Matricule</th>
+                            <th>Nom & Prénoms</th>
+                            <th>Statut actuel</th>
+                            <th class="text-center" style="width: 380px;">Pointer (Instantané HTMX)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in lignes %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><code>{{ ligne.inscription.eleve.matricule }}</code></td>
+                            <td><strong>{{ ligne.inscription.eleve.nom }}</strong> {{ ligne.inscription.eleve.prenoms }}</td>
+                            <td id="statut-badge-{{ ligne.inscription.id }}">
+                                {% if ligne.appel %}
+                                    {% if ligne.appel.statut == "PRESENT" %}
+                                    <span class="badge bg-success">Présent(e)</span>
+                                    {% elif ligne.appel.statut == "ABSENT" %}
+                                    <span class="badge bg-danger">Absent(e)</span>
+                                    {% elif ligne.appel.statut == "RETARD" %}
+                                    <span class="badge bg-warning">En retard</span>
+                                    {% elif ligne.appel.statut == "INFIRMERIE" %}
+                                    <span class="badge bg-info">Infirmerie</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-secondary">Non pointé</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-success"
+                                            hx-post="{% url 'viescolaire:pointer_presence' ligne.inscription.id %}"
+                                            hx-vals='{"statut": "PRESENT", "date": "{{ date_appel|date:'Y-m-d' }}", "creneau": "{{ creneau }}"}'
+                                            hx-target="#statut-badge-{{ ligne.inscription.id }}">
+                                        <i class="bi bi-check-lg"></i> Présent
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger"
+                                            hx-post="{% url 'viescolaire:pointer_presence' ligne.inscription.id %}"
+                                            hx-vals='{"statut": "ABSENT", "date": "{{ date_appel|date:'Y-m-d' }}", "creneau": "{{ creneau }}"}'
+                                            hx-target="#statut-badge-{{ ligne.inscription.id }}">
+                                        <i class="bi bi-x-lg"></i> Absent
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning text-dark"
+                                            hx-post="{% url 'viescolaire:pointer_presence' ligne.inscription.id %}"
+                                            hx-vals='{"statut": "RETARD", "date": "{{ date_appel|date:'Y-m-d' }}", "creneau": "{{ creneau }}"}'
+                                            hx-target="#statut-badge-{{ ligne.inscription.id }}">
+                                        <i class="bi bi-clock"></i> Retard
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info text-dark"
+                                            hx-post="{% url 'viescolaire:pointer_presence' ligne.inscription.id %}"
+                                            hx-vals='{"statut": "INFIRMERIE", "date": "{{ date_appel|date:'Y-m-d' }}", "creneau": "{{ creneau }}"}'
+                                            hx-target="#statut-badge-{{ ligne.inscription.id }}">
+                                        <i class="bi bi-bandaid"></i> Infirm.
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Aucun élève inscrit dans cette classe.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

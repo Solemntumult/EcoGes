@@ -5,13 +5,13 @@
 <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1 class="mb-0"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Fiche de paie {{ fiche.numero }}</h1>
+            <h1 class="page-title mb-0">Fiche de paie {{ fiche.numero }}</h1>
             <p class="text-muted mb-0 mt-1">{{ fiche.personnel.nom }} {{ fiche.personnel.prenoms }} — {{ mois_libelle|capfirst }} {{ fiche.annee }}</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'personnel:remunerations' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Rémunérations</a>
             <a href="{% url 'personnel:fiche_paie_pdf' fiche.pk %}" class="btn btn-outline-primary">
-                <i class="bi bi-download me-1"></i>Bulletin PDF
+                Bulletin PDF
             </a>
         </div>
     </div>
@@ -19,7 +19,7 @@
     <div class="row g-3">
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header fw-semibold"><i class="bi bi-list-ul me-1"></i>Détail des heures par matière</div>
+                <div class="card-header fw-semibold">Détail des heures par matière</div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
@@ -80,7 +80,7 @@
         <div class="col-lg-4">
             {% if fiche.statut == "CALCULEE" %}
             <div class="card mb-3">
-                <div class="card-header fw-semibold"><i class="bi bi-cash-coin me-1"></i>Encaisser le salaire</div>
+                <div class="card-header fw-semibold">Encaisser le salaire</div>
                 <div class="card-body">
                     <form method="post" action="{% url 'personnel:fiche_paie_payer' fiche.pk %}">
                         {% csrf_token %}

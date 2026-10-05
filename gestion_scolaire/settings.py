@@ -25,7 +25,10 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", "django-insecure-changeme-en-production")
 
 DEBUG = env("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [h.strip() for h in env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+for host in ("testserver", "localhost", "127.0.0.1", "web"):
+    if host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
 
 
 # Application definition
@@ -48,6 +51,19 @@ INSTALLED_APPS = [
     "documents",
     "statistiques",
     "portail",
+
+    # Nouveaux modules & services scolaires (Feuille de route Etat_amelioration.md)
+    "viescolaire",
+    "cahier_texte",
+    "communication",
+    "cantine",
+    "sante",
+    "transport",
+    "bibliotheque",
+    "admissions",
+
+    # Tâches asynchrones (Celery)
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -82,22 +98,37 @@ TEMPLATES = [
 WSGI_APPLICATION = "gestion_scolaire.wsgi.application"
 
 
-# Base de données — MySQL (administrable via phpMyAdmin)
-# Toutes les valeurs sont surchargeables par variables d'environnement (voir .env.example)
+# ==============================================================================
+# Base de données
+# ==============================================================================
 
+# --- Configuration active : PostgreSQL (Recommandée pour production & concurrence) ---
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": env("DB_NAME", "gestion_scolaire"),
-        "USER": env("DB_USER", "root"),
-        "PASSWORD": env("DB_PASSWORD", ""),
-        "HOST": env("DB_HOST", "127.0.0.1"),
-        "PORT": env("DB_PORT", "3306"),
-        "OPTIONS": {
-            "charset": "utf8mb4",
-        },
+        "USER": env("DB_USER", "postgres"),
+        "PASSWORD": env("DB_PASSWORD", "postgres"),
+        "HOST": env("DB_HOST", "db"),
+        "PORT": env("DB_PORT", "5432"),
     }
 }
+
+# --- Configuration MySQL (décommenter si vous utilisez MySQL / phpMyAdmin) ---
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.mysql",
+#         "NAME": env("DB_NAME", "gestion_scolaire"),
+#         "USER": env("DB_USER", "root"),
+#         "PASSWORD": env("DB_PASSWORD", ""),
+#         "HOST": env("DB_HOST", "127.0.0.1"),
+#         "PORT": env("DB_PORT", "3306"),
+#         "OPTIONS": {
+#             "charset": "utf8mb4",
+#         },
+#     }
+# }
+
 
 # Modèle utilisateur personnalisé (voir comptes/models.py)
 AUTH_USER_MODEL = "comptes.Utilisateur"
@@ -159,3 +190,47 @@ DOCUMENTS_SEUIL_IMPACT = float(env("SEUIL_IMPAYE_BLOCAGE", "0"))
 handler403 = "gestion_scolaire.views.handler403"
 handler404 = "gestion_scolaire.views.handler404"
 handler500 = "gestion_scolaire.views.handler500"
+
+
+# ==============================================================================
+# Sécurité & Cookies (Best Practices django-security)
+# ==============================================================================
+
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+X_FRAME_OPTIONS = "SAMEORIGIN"  # Permet l'aperçu PDF dans l'application tout en bloquant le détournement
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = env("SECURE_SSL_REDIRECT", "True") == "True"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 an
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+
+# ==============================================================================
+# Configuration Celery & Redis (Traitements asynchrones & files de tâches)
+# ==============================================================================
+
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "django-db")
+CELERY_CACHE_BACKEND = "django-cache"
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60        # Limite stricte : 30 minutes (ex. génération massive de PDF)
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60   # Limite douce : 25 minutes
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1   # Évite la monopolisation des tâches longues par un seul worker
+CELERY_TASK_ACKS_LATE = True            # Ré-achemine la tâche si le worker plante brutalement
+CELERY_RESULT_EXPIRES = 60 * 60 * 24    # Conservation des résultats : 24 heures
+
+

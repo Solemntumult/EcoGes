@@ -111,15 +111,22 @@ def deconnexion(request):
 @login_required
 def accueil(request):
     """Tableau de bord différencié selon le rôle de l'utilisateur."""
+    from django.db.models import Count
     from eleves.models import Eleve, Inscription
     from evaluations.models import Bulletin
     from finances.models import Echeance, ImputationPaiement, Paiement
+    from viescolaire.models import Appel
+    from admissions.models import DemandeAdmission
 
     role = request.user.role
     annee_courante = AnneeScolaire.objects.filter(est_courante=True).first()
-    contexte = {"annee_courante": annee_courante}
+    aujourdhui = timezone.localdate()
+    contexte = {
+        "annee_courante": annee_courante,
+        "aujourdhui": aujourdhui,
+    }
 
-    if role in ("ADMIN", "SUPERADMIN", "CENSEUR", "SECRETARIAT"):
+    if role in ("ADMIN", "SUPERADMIN", "CENSEUR", "SECRETARIAT", "SURVEILLANT", "COMPTABLE"):
         contexte["effectifs_actifs"] = Eleve.objects.filter(statut="ACTIF").count()
         contexte["nb_classes"] = (
             Classe.objects.filter(annee_scolaire=annee_courante).count() if annee_courante else 0
@@ -128,21 +135,40 @@ def accueil(request):
             Inscription.objects.filter(annee_scolaire=annee_courante, statut="ACTIVE").count()
             if annee_courante else 0
         )
+        contexte["absents_jour"] = Appel.objects.filter(date=aujourdhui, statut="ABSENT").count()
+        contexte["retards_jour"] = Appel.objects.filter(date=aujourdhui, statut="RETARD").count()
+        contexte["admissions_attente"] = DemandeAdmission.objects.filter(statut__in=["RECUE", "EN_EXAMEN"]).count()
+
+        # Liste des classes avec effectifs
+        classes_qs = Classe.objects.filter(annee_scolaire=annee_courante).select_related("niveau") if annee_courante else Classe.objects.none()
+        classes_apercu = list(classes_qs.annotate(
+            nb_eleves=Count("inscriptions", filter=Q(inscriptions__statut="ACTIVE"))
+        ).order_by("niveau__ordre", "libelle")[:8])
+        contexte["classes_apercu"] = classes_apercu
+        contexte["chart_classes_labels"] = [c.libelle for c in classes_apercu]
+        contexte["chart_classes_data"] = [c.nb_eleves for c in classes_apercu]
+
+        # Activité récente
+        contexte["dernieres_activites"] = JournalActivite.objects.select_related("utilisateur").order_by("-date_heure")[:6]
 
     if role in ("ADMIN", "SUPERADMIN", "CENSEUR", "COMPTABLE"):
         total_du = Echeance.objects.aggregate(total=Sum("montant_du"))["total"] or Decimal("0")
         total_paye = ImputationPaiement.objects.aggregate(total=Sum("montant_impute"))["total"] or Decimal("0")
+        reste_du = total_du - total_paye
+        taux_recouvrement = round((total_paye / total_du) * 100, 1) if total_du else Decimal("0")
         contexte["total_du"] = total_du
         contexte["total_paye"] = total_paye
-        contexte["reste_du"] = total_du - total_paye
-        contexte["taux_recouvrement"] = (
-            round((total_paye / total_du) * 100, 1) if total_du else Decimal("0")
-        )
+        contexte["reste_du"] = reste_du
+        contexte["taux_recouvrement"] = taux_recouvrement
         contexte["nb_impayes"] = Echeance.objects.exclude(statut="PAYE").count()
-        aujourdhui = timezone.localdate()
         contexte["encaissements_jour"] = (
             Paiement.objects.filter(date_paiement__date=aujourdhui, statut="VALIDE")
             .aggregate(total=Sum("montant"))["total"] or Decimal("0")
+        )
+        contexte["derniers_paiements"] = (
+            Paiement.objects.filter(statut="VALIDE")
+            .select_related("inscription__eleve", "inscription__classe")
+            .order_by("-date_paiement")[:5]
         )
 
     if role == "ENSEIGNANT":

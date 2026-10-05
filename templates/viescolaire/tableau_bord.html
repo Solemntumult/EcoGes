@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Vie Scolaire — Assiduité & Discipline{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Vie Scolaire & Discipline</h1>
+            <p class="text-muted small mb-0">Suivi des présences, retards et incidents du jour ({{ aujourdhui|date:"d F Y" }})</p>
+        </div>
+    </div>
+
+    <!-- Statistiques du jour -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Absences injustifiées</span>
+                </div>
+                <div class="kpi-value text-danger">{{ total_absents }}</div>
+                <div class="kpi-meta">
+                    <span>Élèves signalés non justifiés</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Retards signalés</span>
+                </div>
+                <div class="kpi-value text-warning">{{ total_retards }}</div>
+                <div class="kpi-meta">
+                    <span>Arrivées tardives du jour</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-card h-100">
+                <div class="kpi-label">
+                    <span>Absences justifiées</span>
+                </div>
+                <div class="kpi-value text-success">{{ total_justifies }}</div>
+                <div class="kpi-meta">
+                    <span>Justificatifs médicaux ou parentaux</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Appel par classe -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-white py-3">
+                    <span class="card-header-title">Faire l'appel par classe</span>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for c in classes %}
+                        <a href="{% url 'viescolaire:feuille_appel' c.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ c.libelle }}</strong>
+                                <span class="badge bg-light text-dark ms-2">{{ c.niveau.libelle }}</span>
+                            </div>
+                            <span class="btn btn-sm btn-outline-primary">Faire l'appel</span>
+                        </a>
+                        {% empty %}
+                        <p class="text-muted p-3">Aucune classe configurée.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incidents récents -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-white py-3">
+                    <span class="card-header-title">Derniers incidents disciplinaires</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Élève</th>
+                                    <th>Incident</th>
+                                    <th>Gravité</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inc in incidents_recents %}
+                                <tr>
+                                    <td><strong>{{ inc.eleve.nom }} {{ inc.eleve.prenoms }}</strong></td>
+                                    <td>{{ inc.type_incident }}</td>
+                                    <td><span class="badge bg-danger">{{ inc.get_gravite_display }}</span></td>
+                                    <td class="text-muted small">{{ inc.date_incident|date:"d/m H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">Aucun incident récent signalé.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

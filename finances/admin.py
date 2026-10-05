@@ -2,7 +2,8 @@ from django.contrib import admin
 
 from .models import (
     Echeance, Facture, FicheDePaie, ImputationPaiement, LigneFacture,
-    Paiement, Recu, Remise,
+    Paiement, Recu, Remise, TransactionMobileMoney, CategorieDepense,
+    Depense, ClotureCaisse
 )
 
 
@@ -50,3 +51,30 @@ class FicheDePaieAdmin(admin.ModelAdmin):
     list_filter = ("statut", "annee", "mois")
     readonly_fields = ("numero", "heures_total", "montant_brut")
     search_fields = ("numero", "personnel__nom", "personnel__prenoms")
+
+
+@admin.register(TransactionMobileMoney)
+class TransactionMobileMoneyAdmin(admin.ModelAdmin):
+    list_display = ("reference_externe", "operateur", "numero_client", "montant", "statut", "date_creation")
+    list_filter = ("operateur", "statut", "date_creation")
+    search_fields = ("reference_externe", "numero_client")
+
+
+@admin.register(CategorieDepense)
+class CategorieDepenseAdmin(admin.ModelAdmin):
+    list_display = ("libelle", "nature")
+    list_filter = ("nature",)
+
+
+@admin.register(Depense)
+class DepenseAdmin(admin.ModelAdmin):
+    list_display = ("numero", "libelle", "montant", "categorie", "date_depense", "beneficiaire", "mode_paiement")
+    list_filter = ("categorie", "mode_paiement", "date_depense")
+    search_fields = ("numero", "libelle", "beneficiaire")
+    readonly_fields = ("numero",)
+
+
+@admin.register(ClotureCaisse)
+class ClotureCaisseAdmin(admin.ModelAdmin):
+    list_display = ("date", "solde_ouverture", "total_encaissements", "total_decaissements", "solde_theorique", "solde_physique", "ecart", "cloture_par")
+    date_hierarchy = "date"

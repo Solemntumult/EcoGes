@@ -26,6 +26,14 @@ urlpatterns = [
     path("documents/", include("documents.urls")),
     path("statistiques/", include("statistiques.urls")),
     path("portail/", include("portail.urls")),
+    path("vie-scolaire/", include("viescolaire.urls")),
+    path("cahier-texte/", include("cahier_texte.urls")),
+    path("communication/", include("communication.urls")),
+    path("cantine/", include("cantine.urls")),
+    path("sante/", include("sante.urls")),
+    path("transport/", include("transport.urls")),
+    path("bibliotheque/", include("bibliotheque.urls")),
+    path("admissions/", include("admissions.urls")),
 ]
 
 if settings.DEBUG:

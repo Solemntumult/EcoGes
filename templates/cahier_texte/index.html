@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Cahier de Textes Numérique{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Cahier de Textes & Devoirs</h1>
+            <p class="text-muted small mb-0">Progression pédagogique, contenus des séances et travaux à domicile</p>
+        </div>
+        <div>
+            <form method="get" class="d-flex gap-2">
+                <select name="classe" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">-- Choisir une classe --</option>
+                    {% for c in classes %}
+                    <option value="{{ c.id }}" {% if classe_selectionnee and classe_selectionnee.id == c.id %}selected{% endif %}>
+                        {{ c.libelle }} ({{ c.niveau.libelle }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Séances de cours -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <span class="card-header-title">Dernières séances dispensées</span>
+                    {% if classe_selectionnee %}
+                    <span class="badge bg-primary">{{ classe_selectionnee.libelle }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% for s in seances %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h5 class="h6 mb-0 fw-bold text-dark">{{ s.titre_chapitre }}</h5>
+                            <span class="badge bg-light text-dark border">{{ s.date|date:"d M Y" }} | {{ s.creneau }}</span>
+                        </div>
+                        <div class="text-muted small mb-2">
+                            <i class="bi bi-book me-1"></i>{{ s.affectation.matiere.nom }} — Enseignant : {{ s.affectation.enseignant.nom }} {{ s.affectation.enseignant.prenoms }}
+                        </div>
+                        <p class="mb-2 text-secondary">{{ s.contenu_dispense|linebreaksbr }}</p>
+                        {% if s.objectifs_vises %}
+                        <div class="small text-muted bg-light p-2 rounded mb-2">
+                            <strong>Objectifs :</strong> {{ s.objectifs_vises }}
+                        </div>
+                        {% endif %}
+                        {% if s.fichier_support %}
+                        <a href="{{ s.fichier_support.url }}" target="_blank" class="btn btn-xs btn-outline-primary btn-sm">
+                            <i class="bi bi-paperclip"></i> Support de cours joint
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-journal-x fs-1 opacity-50 d-block mb-2"></i>
+                        Aucune séance enregistrée pour cette sélection.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Devoirs de maison -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <span class="card-header-title">Devoirs à la maison</span>
+                </div>
+                <div class="card-body">
+                    {% for d in devoirs %}
+                    <div class="card border-0 bg-light mb-3 p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-warning text-dark">{{ d.affectation.matiere.nom }}</span>
+                            <span class="small text-danger fw-semibold"><i class="bi bi-clock me-1"></i>Pour le {{ d.date_limite|date:"d/m" }}</span>
+                        </div>
+                        <h6 class="fw-bold mb-1">{{ d.titre }}</h6>
+                        <p class="small text-muted mb-2">{{ d.consignes|truncatewords:20 }}</p>
+                        {% if d.fichier_sujet %}
+                        <a href="{{ d.fichier_sujet.url }}" target="_blank" class="btn btn-sm btn-outline-secondary w-100">
+                            <i class="bi bi-download me-1"></i>Télécharger le sujet
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-check-circle fs-1 opacity-50 d-block mb-2"></i>
+                        Aucun devoir en cours.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
