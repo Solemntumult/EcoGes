@@ -1,370 +1,434 @@
-# Gestion Scolaire — Plateforme Intégrée de Gestion d'École
+# EcoGes (Gestion Scolaire) — Plateforme Intégrée de Gestion d'Établissement Scolaire
 
-Application web développée avec **Django** et **MySQL** permettant de gérer de bout en bout la vie administrative, pédagogique et financière d'un établissement scolaire : inscription des élèves, notes et bulletins, scolarité et paiements, facturation, et génération des documents administratifs.
+Application web complète développée avec **Django 5.2**, **PostgreSQL 16**, **Celery**, **Redis** et **Docker**, permettant de gérer de bout en bout la vie administrative, pédagogique, financière et parascolaire d'un établissement scolaire : inscriptions, scolarité et paiements, notes et bulletins, fiches de paie, vie scolaire, cahier de texte, cantine, santé, transport, bibliothèque et génération des documents officiels.
 
-Ce dépôt est l'implémentation technique du [cahier des charges](#-documentation-associée) du projet (45 cas d'utilisation couvrant 9 modules fonctionnels).
+Ce dépôt concrétise l'implémentation technique du [cahier des charges](#-documentation-associée) du projet et son extension modulaire moderne (architecture type PRONOTE / Single-Tenant d'établissement).
 
 ---
 
 ## Sommaire
 
-- [Fonctionnalités](#-fonctionnalités)
+- [Fonctionnalités & Modules](#-fonctionnalités--modules)
 - [Stack technique](#-stack-technique)
 - [Architecture du projet](#-architecture-du-projet)
-- [Modèle de données](#-modèle-de-données)
+- [Modèle de données & Architecture Single-Tenant](#-modèle-de-données--architecture-single-tenant)
 - [Prérequis](#-prérequis)
-- [Installation](#-installation)
-- [Configuration de la base de données (MySQL / phpMyAdmin)](#-configuration-de-la-base-de-données-mysql--phpmyadmin)
-- [Lancer le projet](#-lancer-le-projet)
+- [Démarrage rapide avec Docker (Recommandé)](#-démarrage-rapide-avec-docker-recommandé)
+- [Installation locale sans Docker](#-installation-locale-sans-docker)
+- [Configuration des variables d'environnement (.env)](#-configuration-des-variables-denvironnement-env)
+- [Traitements asynchrones (Celery & Redis)](#-traitements-asynchrones-celery--redis)
+- [Sécurité & Cookies](#-sécurité--cookies)
 - [Rôles et permissions](#-rôles-et-permissions)
-- [Structure des apps](#-structure-des-apps)
-- [Commandes utiles](#-commandes-utiles)
-- [Roadmap](#-roadmap)
+- [Interfaces métier & URLs](#-interfaces-métier--urls)
+- [Structure détaillée des applications](#-structure-détaillée-des-applications)
+- [Commandes utiles & Jeu de démonstration](#-commandes-utiles--jeu-de-démonstration)
+- [Règles métier clés](#-règles-métier-clés)
+  - [Emploi du temps & rémunérations](#emploi-du-temps--rémunérations)
+  - [Matières & coefficients (Règle béninoise)](#matières--coefficients-règle-béninoise)
+  - [Moteur de rendu PDF (WeasyPrint)](#moteur-de-rendu-pdf-weasyprint)
+- [Roadmap & État d'avancement](#-roadmap--état-davancement)
 - [Documentation associée](#-documentation-associée)
 
 ---
 
-## Fonctionnalités
+## Fonctionnalités & Modules
 
-| Module | Fonctionnalités clés |
+Le projet couvre 17 modules spécialisés :
+
+| Module | Périmètre et fonctionnalités clés |
 |---|---|
-| **Comptes & sécurité** | Authentification, rôles (admin, censeur, secrétariat, comptable, enseignant, parent), journal d'activité |
-| **Paramétrage** | Années scolaires, périodes, niveaux (+ séries du second cycle : A1, C, D, F1...), classes, matières, coefficients par couple (matière, classe), grilles tarifaires, barème de notation, horaires scolaires (modes + pauses) |
-| **Élèves** | Inscription, réinscription, dossier élève, matricule auto-généré, tuteurs/parents |
-| **Personnel** | Fiches enseignants/staff, affectations classe/matière (avec tarif horaire), éditeur d'emploi du temps par classe (grille + détection de conflits), rémunérations automatiques et fiches de paie |
-| **Évaluations** | Saisie des notes, verrouillage par période, calcul des moyennes et rangs, génération des bulletins PDF |
-| **Finances** | Échéanciers, paiements multi-modes, imputation FIFO, remises/bourses, annulation/remboursement |
-| **Facturation** | Factures numérotées automatiquement, reçus de paiement PDF |
-| **Documents** | Certificats de scolarité, attestations, listes de classe, convocations, cartes scolaires — via modèles personnalisables, éditeur avec aperçu temps réel, exports PDF/Word/HTML et envoi par e-mail |
-| **Statistiques** | Tableaux de bord (effectifs, taux de recouvrement, moyennes), exports PDF/Excel |
-
-> L'ensemble de ces données est d'ores et déjà géré via **l'interface d'administration Django** (`/admin/`), pleinement fonctionnelle dès l'installation. Les interfaces métier dédiées à chaque profil (secrétariat, comptabilité, enseignant...) constituent la prochaine étape de développement (voir [Roadmap](#-roadmap)).
+| **Comptes & sécurité** | Authentification sécurisée, 7 rôles métier, verrouillage anti-bruteforce, journal d'audit complet |
+| **Paramétrage** | Années scolaires, trimestres/semestres, niveaux & séries officielles (A1, A2, B, C, D, E, F1-F4...), classes, matières, coefficients par couple (matière, classe), grilles tarifaires, barème, horaires et pauses |
+| **Élèves** | Inscription, réinscription, dossier scolaire complet, matricule auto-généré, fiches tuteurs |
+| **Personnel & Paie** | Dossiers enseignants et administratifs, affectations classe/matière avec tarifs horaires, éditeur d'emploi du temps avec détection des conflits de créneaux/salles, calcul automatique des rémunérations et fiches de paie |
+| **Évaluations & Notes** | Saisie des devoirs/compositions, verrouillage par période, calcul automatique des moyennes, classements et génération des bulletins PDF |
+| **Finances & Caisse** | Échéanciers de scolarité, encaissements multi-modes (espèces, virement, mobile money), imputation FIFO, bourses et remises, annulations contrôlées, états de caisse |
+| **Facturation & Reçus** | Factures numérotées, reçus de paiement horodatés avec QR-Code de vérification |
+| **Documents officiels** | Certificats de scolarité, attestations, listes de classe, convocations, cartes d'identité scolaires — éditeur de gabarits avec aperçu temps réel et génération PDF/Word/HTML |
+| **Statistiques & KPIs** | Tableaux de bord de direction (effectifs, recouvrement, alertes impayés, pyramide des âges, graphiques Chart.js) |
+| **Portail Famille** | Espace de consultation en ligne pour les parents et élèves (notes, emploi du temps, situation financière) |
+| **Vie Scolaire** | Feuilles d'appel par heure/créneau, suivi des absences, retards, dispenses, sanctions et retenues |
+| **Cahier de Texte** | Journal de classe numérique par séance, leçons dispensées, devoirs à la maison et pièces jointes |
+| **Messagerie & Communication** | Messagerie interne sécurisée entre direction, enseignants et parents, notifications et annonces |
+| **Cantine Scolaire** | Gestion des menus hebdomadaires, régimes alimentaires, abonnements et pointage des repas |
+| **Infirmerie & Santé** | Fiches médicales élèves (allergies, vaccins, contacts urgence), registre des passages à l'infirmerie |
+| **Transport Scolaire** | Lignes de transport, arrêts de ramassage, chauffeurs et affectation des élèves par circuit |
+| **Bibliothèque / CDI** | Catalogue des ouvrages (ISBN, auteur, catégorie), gestion des exemplaires, prêts et retours |
+| **Admissions en ligne** | Dépôt des dossiers de candidature, pièces justificatives et arbitrage des admissions |
 
 ---
 
 ## Stack technique
 
-- **Back-end** : [Django](https://www.djangoproject.com/) (Python)
-- **Base de données** : MySQL, administrable via **phpMyAdmin**
-- **Génération de PDF** : [WeasyPrint](https://weasyprint.org/) (bulletins, factures, reçus, documents administratifs) à partir de gabarits HTML/CSS
-- **Gestion des images** : Pillow (photos d'élèves, logos)
-- **Configuration** : variables d'environnement via `python-dotenv` / `.env`
+- **Framework Web** : [Django 5.2](https://www.djangoproject.com/) (Python 3.12+)
+- **Base de données principale** : **PostgreSQL 16** (moteur par défaut, typages avancés, index B-Tree & composites)
+- **Base de données alternative** : MySQL 8.x (supporté via configuration dans `.env` / `settings.py`)
+- **Tâches asynchrones & Cache** : **Celery 5.4** orchestré avec **Redis 7** (broker & backend de résultats)
+- **Conteneurisation** : **Docker & Docker Compose** (orchestration multi-services prête pour la production)
+- **Génération de documents** : [WeasyPrint 63](https://weasyprint.org/) (bulletins, factures, reçus, attestations), [python-docx](https://python-docx.readthedocs.io/) (Word), [openpyxl](https://openpyxl.readthedocs.io/) (Excel), [qrcode](https://pypi.org/project/qrcode/)
+- **Frontend & Design** : HTML5, Bootstrap 5 épuré ("Neo-Precision", bordures 0px strictes), HTMX (interactivité dynamique), Chart.js, typographie Google Font Inter
 
 ---
 
 ## Architecture du projet
 
-Le projet est découpé en **8 applications Django** faiblement couplées, chacune correspondant à un module métier du cahier des charges :
-
 ```
-gestion_scolaire/
-├── manage.py
-├── requirements.txt
-├── .env.example
-├── .gitignore
-├── README.md
+EcoGes/
+├── docker-compose.yml          # Orchestration des conteneurs (web, db, redis, celery_worker)
+├── Dockerfile                  # Image Docker Python 3.12-slim avec dépendances WeasyPrint et C
+├── requirements.txt            # Dépendances Python (Django, psycopg2, celery, redis, weasyprint...)
+├── .env.example                # Modèle de variables d'environnement
+├── manage.py                   # Point d'entrée des commandes Django
 │
-├── gestion_scolaire/        # Configuration du projet (settings, urls, wsgi/asgi)
+├── gestion_scolaire/           # Configuration globale (settings, urls, celery.py, wsgi/asgi)
 │
-├── comptes/                 # Utilisateurs, rôles, journal d'activité
-├── parametrage/             # Années scolaires, niveaux, classes, matières, tarifs, barème
-├── eleves/                  # Élèves, tuteurs, inscriptions
-├── personnel/                # Enseignants/staff, affectations, emploi du temps
-├── evaluations/               # Évaluations, notes, bulletins
-├── finances/                 # Échéances, paiements, factures, reçus, remises
-├── documents/                # Documents administratifs et modèles/gabarits
-└── statistiques/              # Vues et services d'agrégation (tableaux de bord)
+├── comptes/                    # Utilisateurs, 7 rôles métier, journal d'audit
+├── parametrage/                # Années scolaires, niveaux, séries, classes, matières, coefficients, tarifs
+├── eleves/                     # Fiches élèves, tuteurs, inscriptions, dossiers
+├── personnel/                  # Enseignants, affectations, emplois du temps, fiches de paie
+├── evaluations/                # Évaluations, notes, moyennes, rangs, bulletins de notes
+├── finances/                   # Échéanciers, paiements, caisse, factures, reçus, remises
+├── documents/                  # Éditeur de modèles et génération de documents administratifs
+├── statistiques/               # KPIs, tableaux de bord de direction et rapports
+├── portail/                    # Espace famille / élève en lecture seule
+│
+├── viescolaire/                # Feuilles d'appel, suivi des absences, retards et sanctions
+├── cahier_texte/               # Séances de cours, travail à faire, progression pédagogique
+├── communication/              # Messagerie interne et diffusion d'annonces
+├── cantine/                    # Formules, menus hebdomadaires et inscriptions repas
+├── sante/                      # Registre de l'infirmerie, fiches médicales, allergies
+├── transport/                  # Lignes de bus, arrêts, inscriptions aux circuits
+├── bibliotheque/               # Catalogue des livres du CDI, gestion des emprunts
+└── admissions/                 # Formulaire de candidature et validation des dossiers
 ```
-
-Chaque app suit la structure Django standard : `models.py`, `admin.py`, `migrations/`, `views.py`, `apps.py`.
 
 ---
 
-## Modèle de données
+## Modèle de données & Architecture Single-Tenant
 
-Les entités principales et leurs relations sont détaillées dans le cahier des charges (section *Modèle conceptuel de données*). En résumé :
-
-- Un **Élève** possède plusieurs **Inscriptions** (une par année scolaire).
-- Une **Inscription** rattache l'élève à une **Classe** et génère un ensemble d'**Échéances**.
-- Chaque règlement crée un **Paiement**, imputé sur une ou plusieurs échéances, et donne lieu à un **Reçu**.
-- Les **Notes** sont rattachées à une **Évaluation** (matière/classe/période) et agrégées pour produire un **Bulletin**.
-- Chaque document émis est tracé dans **DocumentAdministratif** et dans le **JournalActivite**.
-
-Le schéma physique complet (tables, clés étrangères, index) est généré automatiquement par les migrations Django et consultable/administrable directement dans **phpMyAdmin** après la première migration.
+L'application suit une architecture **Single-Tenant d'établissement** (modèle PRONOTE) :
+- Chaque établissement scolaire dispose de son instance et de sa base de données isolée.
+- Fonctionnement autonome **garanti sur réseau local (LAN)**, même en cas de coupure de connexion Internet.
+- Optimisation des index (`django-index-design`) sur toutes les clés de recherche fréquentes (`Eleve`, `Paiement`, `Evaluation`, `Inscription`, `JournalActivite`).
+- Verrous de cohérence sur les opérations financières pour prévenir tout risque de double imputation.
 
 ---
 
 ## Prérequis
 
-- Python 3.11 ou supérieur
-- MySQL Server 8.x et phpMyAdmin (ex. via [XAMPP](https://www.apachefriends.org/), [WAMP](https://www.wampserver.com/) ou une installation MySQL + phpMyAdmin séparée)
-- pip et virtualenv (ou `venv`, inclus avec Python)
-- Sur Linux/macOS, pour `mysqlclient` : les paquets système `default-libmysqlclient-dev` (ou `mysql-devel`) et `build-essential`/`gcc` doivent être installés au préalable :
-  ```bash
-  # Debian/Ubuntu
-  sudo apt-get install default-libmysqlclient-dev build-essential pkg-config
+### Option A : Déploiement Docker (Conseillé)
+- [Docker](https://docs.docker.com/get-docker/) et [Docker Compose](https://docs.docker.com/compose/) installés sur votre machine (Windows, macOS ou Linux).
 
-  # macOS (Homebrew)
-  brew install mysql-client pkg-config
-  ```
+### Option B : Installation Locale Standard
+- **Python 3.11** ou supérieur
+- **PostgreSQL 16** (ou MySQL 8.x)
+- **Redis 7** (nécessaire pour exécuter Celery et le cache)
+- Runtime **GTK3** (pour le rendu PDF WeasyPrint sous Windows) ou paquets Cairo/Pango sous Linux
 
 ---
 
-## Installation
+## Démarrage rapide avec Docker (Recommandé)
+
+Le moyen le plus simple et le plus rapide pour démarrer le projet sans installer de dépendances système complexes (PostgreSQL, Redis, GTK3) est d'utiliser Docker Compose.
 
 ```bash
-# 1. Cloner le dépôt
+# 1. Cloner le projet
 git clone <url-du-depot>
-cd gestion_scolaire
+cd EcoGes
 
-# 2. Créer et activer un environnement virtuel
-python -m venv venv
-source venv/bin/activate        # Windows : venv\Scripts\activate
-
-# 3. Installer les dépendances
-pip install -r requirements.txt
-
-# 4. Copier le fichier d'environnement et l'adapter
+# 2. Préparer le fichier de configuration
 cp .env.example .env
+
+# 3. Construire et démarrer les conteneurs (web, db, redis, celery_worker)
+docker compose up -d --build
+
+# 4. Appliquer les migrations de base de données
+docker compose exec web python manage.py migrate
+
+# 5. Créer les groupes de permissions par défaut
+docker compose exec web python manage.py creer_groupes
+
+# 6. (Optionnel) Charger le jeu complet de données de démonstration
+docker compose exec web python manage.py creer_demo
+
+# 7. Créer un compte super-administrateur
+docker compose exec web python manage.py createsuperuser
 ```
 
-Éditez ensuite `.env` avec les informations de connexion à votre base MySQL (voir section suivante) et une clé secrète Django propre à votre environnement.
+L'application est immédiatement accessible :
+- **Application Web** : [http://localhost:8000](http://localhost:8000)
+- **Console d'administration** : [http://localhost:8000/admin/](http://localhost:8000/admin/)
+
+Pour consulter les logs en temps réel :
+```bash
+docker compose logs -f web celery_worker
+```
+
+Pour arrêter la pile :
+```bash
+docker compose down
+```
 
 ---
 
-## Configuration de la base de données (MySQL / phpMyAdmin)
+## Installation locale sans Docker
 
-1. **Créer la base de données** via phpMyAdmin :
-   - Onglet **Bases de données** → nom : `gestion_scolaire` (ou celui choisi dans `.env`) → interclassement `utf8mb4_unicode_ci` → **Créer**.
-2. **Créer un utilisateur MySQL dédié** (recommandé plutôt que `root` en production) via l'onglet **Comptes utilisateurs** de phpMyAdmin, avec tous les droits sur la base créée.
-3. **Renseigner `.env`** avec le nom de la base, l'utilisateur, le mot de passe, l'hôte (`127.0.0.1` en local) et le port (`3306` par défaut).
-4. **Appliquer les migrations** (crée automatiquement toutes les tables) :
-   ```bash
-   python manage.py migrate
-   ```
-5. Les tables apparaissent alors dans phpMyAdmin, dans la base sélectionnée, prêtes à être consultées, sauvegardées (onglet **Exporter**) ou restaurées (onglet **Importer**).
+Si vous préférez exécuter le projet directement dans votre terminal local :
 
----
-
-## Lancer le projet
+### 1. Environnement Python & Dépendances
 
 ```bash
-# Créer un compte administrateur
-python manage.py createsuperuser
+# 1. Créer et activer l'environnement virtuel
+python -m venv venv
+# Sous Windows :
+venv\Scripts\activate
+# Sous Linux / macOS :
+source venv/bin/activate
 
-# Lancer le serveur de développement
-python manage.py runserver
+# 2. Installer les packages
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-- Application : http://127.0.0.1:8000/
-- Interface d'administration (gestion complète des données) : http://127.0.0.1:8000/admin/
+### 2. Base de données PostgreSQL
+
+1. Installez PostgreSQL et créez la base de données :
+   ```sql
+   CREATE DATABASE gestion_scolaire;
+   CREATE USER postgres WITH ENCRYPTED PASSWORD 'postgres';
+   GRANT ALL PRIVILEGES ON DATABASE gestion_scolaire TO postgres;
+   ```
+2. Adaptez votre fichier `.env` :
+   ```dotenv
+   DB_NAME=gestion_scolaire
+   DB_USER=postgres
+   DB_PASSWORD=postgres
+   DB_HOST=127.0.0.1
+   DB_PORT=5432
+   ```
+
+*(Si vous souhaitez utiliser MySQL à la place de PostgreSQL, commentez le bloc PostgreSQL et décommentez le bloc MySQL dans `gestion_scolaire/settings.py` et dans `requirements.txt`).*
+
+### 3. Migrations & Données initiales
+
+```bash
+python manage.py migrate
+python manage.py creer_groupes
+python manage.py creer_demo              # Peuple automatiquement la base
+python manage.py createsuperuser         # Crée votre accès administrateur
+```
+
+### 4. Lancement des services
+
+Dans des fenêtres de terminal distinctes :
+
+```bash
+# Terminal 1 : Serveur Web Django
+python manage.py runserver
+
+# Terminal 2 : Worker Celery (si Redis est lancé)
+celery -A gestion_scolaire worker -l info
+```
 
 ---
 
-## Envoi d'e-mails (SMTP)
+## Configuration des variables d'environnement (.env)
 
-La plateforme peut envoyer des e-mails pour :
-- la **réinitialisation de mot de passe** (lien « Mot de passe oublié » sur la page de connexion) ;
-- l'**envoi de documents** (certificats, attestations, relances...) directement depuis l'éditeur de documents, le dossier élève ou l'historique — le document est généré en PDF (ou HTML si WeasyPrint est absent) et joint à l'e-mail.
-
-La configuration se fait dans le fichier `.env` (voir `.env.example`) :
+Toutes les options de configuration sont personnalisables via `.env` :
 
 ```dotenv
-DJANGO_EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+# Sécurité & Debug
+DJANGO_SECRET_KEY=cle-secrete-ultra-longue-et-aleatoire
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,web
+
+# Base de Données (PostgreSQL par défaut)
+DB_NAME=gestion_scolaire
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=db                 # Utilisez '127.0.0.1' si vous tournez hors Docker
+DB_PORT=5432
+
+# File de tâches asynchrone (Celery & Redis)
+CELERY_BROKER_URL=redis://redis:6379/0      # redis://127.0.0.1:6379/0 hors Docker
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+# Envoi d'e-mails (SMTP)
+DJANGO_EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend  # ou smtp
 DJANGO_EMAIL_HOST=smtp.gmail.com
 DJANGO_EMAIL_PORT=587
-DJANGO_EMAIL_USER=votre.adresse@gmail.com
-DJANGO_EMAIL_PASSWORD=votre-mot-de-passe-application
+DJANGO_EMAIL_USER=votre-email@gmail.com
+DJANGO_EMAIL_PASSWORD=votre-mot-de-passe-d-application
 DJANGO_EMAIL_USE_TLS=True
-DJANGO_DEFAULT_FROM_EMAIL=Gestion Scolaire <votre.adresse@gmail.com>
+DJANGO_DEFAULT_FROM_EMAIL=Gestion Scolaire <no-reply@votredomaine.com>
 ```
 
-> **Gmail** : générez un *mot de passe d'application* (Compte Google → Sécurité → Vérification en 2 étapes → Mots de passe des applications) et utilisez-le dans `DJANGO_EMAIL_PASSWORD`. Tant que `DJANGO_EMAIL_BACKEND` reste sur `console`, les e-mails s'affichent dans la console du serveur (aucun envoi réel) — idéal en développement.
+> **Mode Développement** : avec `DJANGO_EMAIL_BACKEND=console`, les e-mails générés s'affichent directement dans le flux de logs sans requérir de serveur SMTP.
+
+---
+
+## Traitements asynchrones (Celery & Redis)
+
+Le projet intègre nativement **Celery 5.4** configuré avec **Redis** pour fluidifier l'expérience utilisateur :
+- Génération en masse des bulletins de notes PDF de fin de trimestre.
+- Envoi groupé des quittances, reçus d'encaissement et relances d'impayés par e-mail.
+- Suivi et historique d'exécution via `django-celery-results`.
+- Configuration de tolérance aux pannes (`task_acks_late = True`, time-limit stricte à 30 minutes, `prefetch_multiplier = 1`).
+
+---
+
+## Sécurité & Cookies
+
+La sécurité a été renforcée selon les recommandations `django-security` :
+- **Protection des sessions** : `SESSION_COOKIE_HTTPONLY = True`, `SameSite = 'Lax'`.
+- **Protection anti-détournement** : `X_FRAME_OPTIONS = "SAMEORIGIN"` (permet la prévisualisation des PDF dans les modales tout en empêchant le détournement de clic).
+- **Protection XSS & Sniffing MIME** : `SECURE_CONTENT_TYPE_NOSNIFF = True`, `SECURE_BROWSER_XSS_FILTER = True`.
+- **Verrouillage de compte** : blocage temporaire automatique après 5 tentatives infructueuses pendant 30 minutes (`VERROUILLAGE_TENTATIVES = 5`).
+- **Production (`DEBUG = False`)** : bascule automatique vers `SECURE_SSL_REDIRECT = True`, `SESSION_COOKIE_SECURE = True`, et HSTS activé (`31536000` secondes avec `includeSubDomains`).
 
 ---
 
 ## Rôles et permissions
 
-Le modèle `Utilisateur` (app `comptes`) définit sept rôles correspondant aux acteurs du cahier des charges :
+Le modèle `Utilisateur` (app `comptes`) intègre 7 rôles correspondant au fonctionnement hiérarchique d'un établissement :
 
-| Rôle | Code | Périmètre |
+| Rôle | Code | Périmètre d'accès |
 |---|---|---|
-| Administrateur / Direction | `ADMIN` | Accès complet, paramétrage, supervision |
-| Censeur / Direction des études | `CENSEUR` | Classes, emplois du temps, validation des notes, bulletins |
-| Secrétariat | `SECRETARIAT` | Inscriptions, dossiers élèves, documents administratifs |
-| Comptable / Caissier(ère) | `COMPTABLE` | Scolarité, paiements, factures, reçus, relances |
-| Enseignant | `ENSEIGNANT` | Saisie des notes de ses matières/classes |
-| Parent / Élève | `PARENT` | Consultation (portail, évolution future) |
-| Super-administrateur technique | `SUPERADMIN` | Sauvegardes, administration système |
-
-La granularité fine des permissions (lecture/écriture/suppression par module) s'appuie sur le système de **groupes et permissions natif de Django**, configurable dans `/admin/auth/group/`.
+| **Administrateur / Direction** | `ADMIN` | Accès intégral, statistiques, validations stratégiques, clôtures |
+| **Censeur / Dir. Études** | `CENSEUR` | Emplois du temps, affectations, validation des notes, délibérations |
+| **Secrétariat** | `SECRETARIAT` | Inscriptions, gestion des dossiers élèves, certificats et attestations |
+| **Comptable / Caisse** | `COMPTABLE` | Scolarité, quittances, encaissements, états de caisse, fiches de paie |
+| **Enseignant** | `ENSEIGNANT` | Saisie des notes, cahier de texte, feuilles d'appel et devoirs |
+| **Parent / Élève** | `PARENT` | Consultation du dossier scolaire, notes, factures acquittées, absences |
+| **Super-administrateur** | `SUPERADMIN` | Maintenance système, sauvegardes de base, journalisation d'audit |
 
 ---
 
-## Structure des apps
+## Interfaces métier & URLs
+
+Outre l'interface Django native accessible sur `/admin/`, l'application propose des espaces métiers dédiés :
+
+| Espace | URL | Description |
+|---|---|---|
+| **Tableau de Bord Exécutif** | `/` | Vue synthétique de direction (KPIs, effectifs, recouvrement, journal) |
+| **Élèves & Dossiers** | `/eleves/` | Liste, création, transfert, consultation et réinscriptions |
+| **Finances & Scolarité** | `/finances/` | Encaissements, impayés, états de caisse, remises et relances |
+| **Évaluations & Bulletins** | `/evaluations/` | Saisie des notes, délibérations, génération des bulletins PDF |
+| **Personnel & Paie** | `/personnel/` | Enseignants, créneaux d'emploi du temps, fiches de paie |
+| **Paramétrage** | `/parametrage/` | Niveaux, séries, classes, matières, coefficients, horaires |
+| **Documents officiels** | `/documents/` | Éditeur WYSIWYG de gabarits, certificats, cartes scolaires |
+| **Statistiques & Rapports** | `/statistiques/` | Indicateurs de performance, taux de réussite, bilan financier |
+| **Vie Scolaire** | `/vie-scolaire/` | Feuilles d'appel, gestion des absences, retards et retenues |
+| **Cahier de Texte** | `/cahier-texte/` | Séances quotidiennes, travail à domicile, pièces jointes |
+| **Messagerie interne** | `/communication/` | Échanges sécurisés direction / enseignants / familles |
+| **Cantine Scolaire** | `/cantine/` | Menus, allergènes, abonnements et pointage |
+| **Santé & Infirmerie** | `/sante/` | Registre médical, dispenses, passages infirmerie |
+| **Transport** | `/transport/` | Circuits de ramassage, arrêts et élèves assignés |
+| **Bibliothèque (CDI)** | `/bibliotheque/` | Catalogue des livres, prêts en cours, retards |
+| **Admissions** | `/admissions/` | Dépôt et instruction des dossiers d'admission |
+| **Portail Famille** | `/portail/` | Espace élève / parent en consultation sécurisée |
+
+---
+
+## Structure détaillée des applications
 
 | App | Modèles principaux |
 |---|---|
 | `comptes` | `Utilisateur`, `JournalActivite` |
-| `parametrage` | `AnneeScolaire`, `Periode`, `Niveau` (+ `Serie`), `Classe`, `Matiere`, `ClasseMatiereCoefficient`, `TypeFrais`, `GrilleTarifaire`, `BaremeEvaluation`, `HoraireJournalier`, `PauseHoraire`, `Etablissement`, `LogoEtablissement` |
+| `parametrage` | `AnneeScolaire`, `Periode`, `Niveau`, `Serie`, `Classe`, `Matiere`, `ClasseMatiereCoefficient`, `GrilleTarifaire`, `HoraireJournalier`, `PauseHoraire`, `Etablissement` |
 | `eleves` | `Eleve`, `Tuteur`, `Inscription` |
-| `personnel` | `Personnel`, `Affectation` (avec `tarif_horaire`), `CreneauEmploiDuTemps` |
-| `evaluations` | `Evaluation`, `Note`, `Bulletin` |
-| `finances` | `Echeance`, `Remise`, `Paiement`, `ImputationPaiement`, `Facture`, `LigneFacture`, `Recu`, `FicheDePaie` |
+| `personnel` | `Personnel`, `Affectation` (avec `tarif_horaire`), `CreneauEmploiDuTemps`, `DisponibiliteEnseignant` |
+| `evaluations` | `Evaluation`, `Note`, `Bulletin`, `DetailBulletin` |
+| `finances` | `Echeance`, `Paiement`, `ImputationPaiement`, `Facture`, `Recu`, `Remise`, `FicheDePaie`, `ClotureCaisse` |
 | `documents` | `ModeleDocument`, `DocumentAdministratif` |
-| `statistiques` | *(pas de modèles propres — agrégations sur les autres apps)* |
+| `statistiques` | Services d'agrégation, calculs de taux et projections analytiques |
+| `portail` | Vues sécurisées et tableau de bord parent/élève |
+| `viescolaire` | `FeuilleAppel`, `LigneAppel`, `IncidentDiscipline`, `Sanction` |
+| `cahier_texte` | `CahierDeTexte`, `SeanceCours`, `DevoirMaison` |
+| `communication` | `Conversation`, `MessageInterne`, `AnnonceGenerale` |
+| `cantine` | `MenuCantine`, `Plat`, `InscriptionCantine`, `PointageRepas` |
+| `sante` | `FicheMedicale`, `PassageInfirmerie`, `ProtocoleUrgence` |
+| `transport` | `LigneTransport`, `ArretTransport`, `AbonnementTransport` |
+| `bibliotheque` | `Ouvrage`, `Exemplaire`, `Emprunt` |
+| `admissions` | `DossierAdmission`, `PieceJointeAdmission` |
 
 ---
 
-## Commandes utiles
+## Commandes utiles & Jeu de démonstration
 
 ```bash
-# Créer de nouvelles migrations après modification des modèles
-python manage.py makemigrations
-
-# Appliquer les migrations
-python manage.py migrate
-
-# Ouvrir un shell Django (accès direct aux modèles)
-python manage.py shell
-
-# Lancer les tests
-python manage.py test
-
-# Collecter les fichiers statiques (avant déploiement en production)
-python manage.py collectstatic
-```
-
----
-
-## Roadmap
-
-- [x] Vues et gabarits métier par rôle (secrétariat, comptabilité, enseignant, direction)
-- [x] Authentification personnalisée (connexion, verrouillage de compte, réinitialisation de mot de passe)
-- [x] Génération des bulletins, factures, reçus et documents administratifs en PDF (WeasyPrint)
-- [x] Tableaux de bord statistiques (effectifs, recouvrement, résultats, graphiques Chart.js)
-- [x] Portail parents/élèves en lecture seule
-- [ ] File de tâches asynchrone (Celery) pour la génération en masse des bulletins/factures
-- [ ] Notifications par e-mail/SMS (relances de paiement, publication des bulletins)
-- [ ] Déploiement production (Gunicorn + Nginx, variables d'environnement sécurisées)
-
-## Interfaces métier
-
-Outre `/admin/`, l'application expose désormais une interface web complète :
-
-| Rôle | Accueil après connexion |
-|---|---|
-| Secrétariat | Liste des élèves (`/eleves/`) |
-| Comptabilité | Impayés & relances (`/finances/`) |
-| Enseignant | Ses évaluations (`/evaluations/`) |
-| Direction / Censeur | Tableau de bord (`/`) |
-| Parent / Élève | Portail (`/portail/`) |
-
-### Commandes utiles
-
-```bash
-# Créer les groupes de permissions par rôle (après la migration initiale)
+# Créer les groupes et permissions initiales
 python manage.py creer_groupes
 
-# Jeu de données de démonstration complet (paramétrage + élèves + notes + paiements)
-python manage.py creer_demo              # base vide : tout créer
-python manage.py creer_demo --reset      # vider puis reconstruire
-python manage.py creer_demo --eleves 8   # 8 élèves par classe
+# Créer des données de test complètes (élèves, évaluations, paiements, emplois du temps)
+python manage.py creer_demo              # Création standard
+python manage.py creer_demo --reset      # Réinitialiser puis reconstruire
+python manage.py creer_demo --eleves 10  # Définir le nombre d'élèves par classe
 
-# Sauvegarder la base MySQL dans backups/ (UC-42)
-python manage.py sauvegarde_db
-
-# Lancer les tests SANS serveur MySQL (base SQLite en mémoire)
+# Exécuter la suite de tests automatisés (avec SQLite en mémoire pour rapidité)
 python manage.py test --settings=gestion_scolaire.settings_test
 
-# Lancer les tests contre MySQL (production)
+# Exécuter les tests sur la base PostgreSQL
 python manage.py test
+
+# Sauvegarder la base de données
+python manage.py sauvegarde_db
 ```
 
-### Jeu de données de démonstration
+### Comptes de démonstration préconfigurés
 
-La commande `creer_demo` peuple toute la base en une seule fois pour tester
-sans saisir les données à la main :
+Après l'exécution de `creer_demo`, vous pouvez vous connecter avec :
 
-- **Paramétrage** : année scolaire 2026-2027 (courante), 3 trimestres, 5 niveaux/classes,
-  matières avec coefficients, grille tarifaire, barème, 2 modes d'horaire (journée continue
-  active 07:00–15:35, journée coupée 07:30–18:30) avec récréation (10:00–10:15) et pause déjeuner ;
-- **Comptes** : `censeur/censeur123!`, `secre/secre123!`, `caisse/caisse123!`, `prof/prof123!`
-  (l'admin existant est conservé) ;
-- **Personnel** : 3 enseignants, affectations classe/matière avec tarifs horaires (3 000–4 000 F/h),
-  emploi du temps aligné sur les plages de l'horaire actif, fiches de paie du mois courant ;
-- **Élèves** : 30 élèves avec tuteurs, inscriptions et échéanciers (via le service métier) ;
-- **Évaluations** : devoirs + compositions sur 3 périodes, ~1 000 notes, bulletins calculés ;
-- **Finances** : paiements variés (payés / partiels / impayés via FIFO), reçus, factures, remises.
+- **Direction / Admin** : `admin` / `Admin123!`
+- **Secrétariat** : `secre` / `secre123!`
+- **Comptabilité / Caisse** : `caisse` / `caisse123!`
+- **Censeur** : `censeur` / `censeur123!`
+- **Enseignant** : `prof` / `prof123!`
 
-Comptes de démonstration : `admin / Admin123!`, `secre / secre123!`, `caisse / caisse123!`,
-`censeur / censeur123!`, `prof / prof123!`.
+---
+
+## Règles métier clés
 
 ### Emploi du temps & rémunérations
+- **Horaires scolaires** : configuration des créneaux actifs (journée continue ou coupée) et calcul automatique des plages horaires entre les pauses récréatives.
+- **Grille & détection des conflits** : contrôle instantané empêchant qu'un enseignant, une classe ou une salle ne soit assigné deux fois au même créneau horaire.
+- **Calcul de rémunération** : `heures de cours hebdomadaires × tarif horaire affecté × 4,33`, avec émission de la fiche de paie officielle et traçabilité comptable.
 
-- **Horaires scolaires** (`Paramétrage → Horaires scolaires`) : créez les modes d'horaire de
-  l'établissement (journée continue 07:00–15:35, journée coupée 07:30–18:30...) et ajustez les
-  pauses (récréation, pause déjeuner) — leurs horaires exacts sont libres. Un seul mode est
-  actif et s'applique à toutes les classes. Les plages de cours sont calculées automatiquement
-  entre les pauses.
-- **Éditeur d'emploi du temps par classe** (`Emploi du temps` → une classe) : grille éditable
-  jour × plage horaire, chaque cellule = matière/enseignant + salle. La détection de conflits
-  (enseignant, classe, salle déjà occupés) bloque l'enregistrement. Un formulaire « créneau
-  libre » permet d'ajouter des cours hors grille standard.
-- **Rémunérations** (`Rémunérations`, comptable/direction) : salaire calculé automatiquement =
-  heures de cours (issues de l'emploi du temps) × tarif horaire de chaque affectation
-  (enseignant + matière + classe), sur toutes les classes. Mois moyen : heures hebdo × 4,33.
-  Génération de la **fiche de paie** (numérotée FP-…), encaissement (mode + date), bulletin PDF,
-  annulation tant qu'elle n'est pas payée.
+### Matières & coefficients (Règle béninoise)
+> **Règle fondamentale** : un coefficient n'appartient pas à une matière de manière isolée, mais au **couple (matière, classe)**. Une même matière peut avoir un coefficient différent d'une classe à l'autre au sein d'une même série.
+- Prise en charge des séries officielles du second cycle (A1, A2, B, C, D, E, F1-F4, G1-G3, EA).
+- Option **Tronc commun** qui lie automatiquement la matière aux classes du niveau par signal Django.
 
-### Matières & coefficients (gestionnaire de bulletins)
+### Moteur de rendu PDF (WeasyPrint)
+- Génération au format vectoriel haute fidélité des bulletins, factures, quittances et cartes d'identité scolaires.
+- **Sous Docker** : préinstallé et configuré avec toutes les polices et dépendances C nécessaires.
+- **Sous Windows natif** : nécessite le runtime [GTK3 for Windows](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases). En cas d'absence, le système bascule automatiquement sur un export HTML imprimable.
 
-**Règle métier : un coefficient n'appartient jamais à une matière seule — il
-appartient toujours au couple (matière, classe).** La même matière peut donc
-avoir un coefficient différent d'une classe à l'autre, même au sein d'une même
-série.
+---
 
-- **Séries du second cycle** : liste officielle béninoise (A1, A2, B, C, D, E,
-  F1-F4, G1-G3, EA) gérée dans `Paramétrage → Matières & coefficients`.
-- **Niveaux & matières** : créez un niveau du premier cycle (sans série) ou du
-  second cycle (avec série, ex. 2nde D), puis les matières par niveau.
-- **Coefficients par classe** (`Matières & coefficients` → `Coefficients` d'une
-  classe) : ajoutez une matière existante ou nouvelle à une classe précise avec
-  son coefficient, modifiez-le sans effet de bord sur les autres classes, ou
-  retirez la liaison.
-- **Tronc commun** : une matière peut être marquée « tronc commun » (création
-  ou bouton ★). Elle est alors **liée automatiquement** à toutes les classes de
-  son niveau — à la création de la matière comme à la création d'une nouvelle
-  classe de ce niveau (signal `post_save`). Les liaisons créées ne sont jamais
-  supprimées automatiquement : le retrait reste une action manuelle par classe.
-- Le moteur de bulletins pondère chaque matière par le coefficient du couple
-  (classe, matière) — défaut 1 si aucune liaison n'est définie.
+## Roadmap & État d'avancement
 
-### Rendu PDF (WeasyPrint)
-
-Les bulletins, factures, reçus, certificats et cartes scolaires sont générés
-avec WeasyPrint (`weasyprint==63.*`, déjà dans `requirements.txt`).
-
-**Windows** : WeasyPrint a besoin du runtime GTK3 (DLL Pango/Cairo).
-L'installeur officiel est disponible ici :
-<https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases>
-(installez `gtk3-runtime-…-win64.exe`, un popup UAC vous le demandera).
-
-L'application **charge automatiquement** les DLL GTK à la volée
-(`documents/pdf.py` → `os.add_dll_directory`) : les PDF fonctionnent même si
-le serveur a été lancé avant l'installation du runtime.
-
-Sans GTK, l'application retombe automatiquement sur un rendu HTML téléchargeable
-(plus aucun PDF réel tant que le runtime n'est pas installé).
+- [x] Refonte de l'interface en design "Neo-Precision" (0px border-radius, pure typographie Inter)
+- [x] Migration de la base de données vers PostgreSQL 16
+- [x] Conteneurisation complète multi-services avec Docker & Docker Compose
+- [x] Intégration de Celery 5.4 et Redis pour l'asynchronisme
+- [x] Optimisation des index de base de données (`django-index-design`)
+- [x] Durcissement des cookies et de la sécurité applicative (`django-security`)
+- [x] Ajout des 8 nouveaux modules scolaires (Vie scolaire, Cahier de texte, Cantine, Santé, Transport, Bibliothèque, Communication, Admissions)
+- [x] Authentification avec verrouillage anti-bruteforce et journal d'audit
+- [ ] API REST (Django REST Framework) pour futures applications mobiles parents/professeurs
+- [ ] Module de synchronisation hors-ligne (mode hybride Intranet / Cloud)
 
 ---
 
 ## Documentation associée
 
-- **Cahier des charges** : `Cahier_des_charges_Gestion_Scolaire.docx` — spécifications fonctionnelles complètes (45 cas d'utilisation, exigences non fonctionnelles, planning).
+- **Cahier des charges fonctionnel** : `Cahier_des_charges_Gestion_Scolaire.docx`
+- **Bilan technique des apports** : `BILAN_APPORTS.md`
+- **Feuille de route d'amélioration** : `Etat_amelioration.md`
 
 ---
 
 ## Licence
 
-Projet interne — licence à définir selon le contexte de diffusion.
+Projet sous licence propriétaire — Réservé à l'établissement exploitant.
