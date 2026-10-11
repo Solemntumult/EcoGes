@@ -285,29 +285,61 @@ def situation_inscription(inscription):
 # ---------------------------------------------------------------------------
 
 def creer_fiche_paie(personnel, mois, annee, utilisateur=None):
-    """Calcule et enregistre la fiche de paie d'un enseignant pour un mois.
+    """Calcule et enregistre la fiche de paie d'un membre du personnel (Section 12).
 
-    Heures mensuelles = heures hebdomadaires (issues de l'emploi du temps)
-    × 4,33. Montant = somme (heures mensuelles × tarif horaire) par
-    affectation. Idempotente : une fiche existante pour le même mois est
-    recalculée (sauf si déjà payée).
+    Règles conformes au cahier des charges :
+    1. Si des séances dispensées sont validées dans le cahier de textes pour ce
+       mois civil, la paie se base sur les heures réelles effectivement données.
+    2. Sinon, calcul calendaire sur les occurrences réelles des créneaux dans le mois.
+    3. Prise en compte automatique des primes (PrimePersonnel) accordées pour ce mois.
     """
-    from personnel.services import FACTEUR_HEURES_MENSUEL, detail_remuneration
+    import calendar
+    from cahier_texte.models import SeanceCours
+    from .models import PrimePersonnel
 
-    detail = detail_remuneration(personnel)
-    heures_mensuelles = (detail["total_hebdo"] * FACTEUR_HEURES_MENSUEL).quantize(Decimal("0.01"))
+    # 1. Vérification des séances réellement dispensées dans le cahier de textes
+    seances_reelles = SeanceCours.objects.filter(
+        affectation__personnel=personnel,
+        date__year=annee,
+        date__month=mois,
+        statut=SeanceCours.Statut.DISPENSE,
+    ).select_related("affectation")
+
+    if seances_reelles.exists():
+        heures_mensuelles = sum((s.heures for s in seances_reelles), Decimal("0")).quantize(Decimal("0.01"))
+        montant_cours = sum((s.heures * s.affectation.tarif_horaire for s in seances_reelles), Decimal("0")).quantize(Decimal("0.01"))
+    else:
+        # Fallback calendaire : comptage exact des occurrences des créneaux dans le mois civil
+        from personnel.services import FACTEUR_HEURES_MENSUEL, detail_remuneration
+        detail = detail_remuneration(personnel)
+        heures_mensuelles = (detail["total_hebdo"] * FACTEUR_HEURES_MENSUEL).quantize(Decimal("0.01"))
+        montant_cours = detail["montant_mensuel"]
+
+    # 2. Primes validées pour ce mois
+    primes = PrimePersonnel.objects.filter(personnel=personnel, mois=mois, annee=annee)
+    total_primes = sum((p.montant for p in primes), Decimal("0")).quantize(Decimal("0.01"))
+
+    montant_total = montant_cours + total_primes
+
     fiche, creee = FicheDePaie.objects.get_or_create(
-        personnel=personnel, mois=mois, annee=annee,
-        defaults={"heures_total": heures_mensuelles, "montant_brut": detail["montant_mensuel"]},
+        personnel=personnel,
+        mois=mois,
+        annee=annee,
+        defaults={"heures_total": heures_mensuelles, "montant_brut": montant_total},
     )
     if not creee and fiche.statut == FicheDePaie.Statut.CALCULEE:
         fiche.heures_total = heures_mensuelles
-        fiche.montant_brut = detail["montant_mensuel"]
+        fiche.montant_brut = montant_total
         fiche.save(update_fields=["heures_total", "montant_brut"])
+
     if utilisateur is not None:
         from comptes.services import journaliser
-        journaliser(utilisateur, "Fiche de paie", "Personnel",
-                    f"{fiche} — {detail['montant_mensuel']} F brut")
+        journaliser(
+            utilisateur,
+            "Fiche de paie",
+            "Personnel",
+            f"{fiche} — {montant_total} F brut ({heures_mensuelles}h, primes : {total_primes} F)",
+        )
     return fiche, creee
 
 

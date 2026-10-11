@@ -99,19 +99,7 @@
         </div>
         {% endif %}
 
-        {% if admissions_attente is not None %}
-        <div class="col-6 col-md-4 col-xl-2">
-            <div class="kpi-card h-100">
-                <div class="kpi-label">
-                    <span>Admissions</span>
-                </div>
-                <div class="kpi-value {% if admissions_attente > 0 %}text-primary{% endif %}">{{ admissions_attente }}</div>
-                <div class="kpi-meta">
-                    <span>Dossier(s) à examiner</span>
-                </div>
-            </div>
-        </div>
-        {% elif nb_bulletins is not None %}
+        {% if nb_bulletins is not None %}
         <div class="col-6 col-md-4 col-xl-2">
             <div class="kpi-card h-100">
                 <div class="kpi-label">
@@ -119,7 +107,7 @@
                 </div>
                 <div class="kpi-value">{{ nb_bulletins }}</div>
                 <div class="kpi-meta">
-                    <span>Évaluations générées</span>
+                    <span>Générés sur la période</span>
                 </div>
             </div>
         </div>
@@ -321,16 +309,16 @@
                         <span class="text-muted small">Pointage HTMX</span>
                     </a>
                     <a href="{% url 'evaluations:mes_evaluations' %}" class="quick-action-link">
-                        <span>Évaluations & Notes</span>
-                        <span class="text-muted small">Saisie semestrielle</span>
+                        <span>Notes & Évaluations</span>
+                        <span class="text-muted small">Saisie par classe</span>
+                    </a>
+                    <a href="{% url 'finances:impayes' %}" class="quick-action-link">
+                        <span>Frais de scolarité</span>
+                        <span class="text-muted small">Suivi des paiements</span>
                     </a>
                     <a href="{% url 'documents:accueil' %}" class="quick-action-link">
                         <span>Documents & Certificats</span>
                         <span class="text-muted small">Éditeur WeasyPrint</span>
-                    </a>
-                    <a href="{% url 'admissions:liste' %}" class="quick-action-link">
-                        <span>Candidatures d'admission</span>
-                        <span class="text-muted small">Pré-inscriptions</span>
                     </a>
                 </div>
             </div>

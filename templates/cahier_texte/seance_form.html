@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}{{ titre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'cahier_texte:index' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="page-title mb-0">{{ titre }}</h1>
+        </div>
+        <p class="text-muted mb-0 mt-1">Saisie pédagogique des notions abordées, volume horaire et statut effectif</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Affectation (Classe — Matière — Enseignant) (*)</label>
+                                {{ form.affectation }}
+                                {% if form.affectation.errors %}<div class="text-danger small">{{ form.affectation.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Date de la séance (*)</label>
+                                {{ form.date }}
+                                {% if form.date.errors %}<div class="text-danger small">{{ form.date.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Créneau horaire (*)</label>
+                                {{ form.creneau }}
+                                {% if form.creneau.errors %}<div class="text-danger small">{{ form.creneau.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Volume horaire (heures) (*)</label>
+                                {{ form.heures }}
+                                {% if form.heures.errors %}<div class="text-danger small">{{ form.heures.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Statut effectif du cours (*)</label>
+                                {{ form.statut }}
+                                {% if form.statut.errors %}<div class="text-danger small">{{ form.statut.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Date de report éventuelle</label>
+                                {{ form.date_report }}
+                                {% if form.date_report.errors %}<div class="text-danger small">{{ form.date_report.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Motif si la séance est annulée ou reportée</label>
+                                {{ form.motif_statut }}
+                                {% if form.motif_statut.errors %}<div class="text-danger small">{{ form.motif_statut.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Titre du chapitre / Notion clé (*)</label>
+                                {{ form.titre_chapitre }}
+                                {% if form.titre_chapitre.errors %}<div class="text-danger small">{{ form.titre_chapitre.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Contenu dispensé (cours, théorèmes, exercices réalisés) (*)</label>
+                                {{ form.contenu_dispense }}
+                                {% if form.contenu_dispense.errors %}<div class="text-danger small">{{ form.contenu_dispense.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Objectifs pédagogiques visés</label>
+                                {{ form.objectifs_vises }}
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Support de cours joint (PDF, document)</label>
+                                {{ form.fichier_support }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <a href="{% url 'cahier_texte:index' %}" class="btn btn-outline-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-1"></i>Enregistrer la séance
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

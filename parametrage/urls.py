@@ -7,6 +7,10 @@ from . import views
 app_name = "parametrage"
 
 urlpatterns = [
+    path("classes/", views.classes, name="classes"),
+    path("classes/creer/", views.classe_creer, name="classe_creer"),
+    path("classes/<int:pk>/editer/", views.classe_modifier, name="classe_modifier"),
+    path("classes/<int:pk>/supprimer/", views.classe_supprimer, name="classe_supprimer"),
     path("matieres/", views.matieres, name="matieres"),
     path("matieres/<int:pk>/tronc-commun/", views.basculer_tronc_commun, name="basculer_tronc_commun"),
     path("matieres/classe/<int:pk>/", views.classe_matieres, name="classe_matieres"),

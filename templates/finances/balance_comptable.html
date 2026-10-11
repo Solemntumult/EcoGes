@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Balance Générale des Comptes{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="page-title mb-0">Balance Générale des Comptes</h1>
+            <p class="text-muted mb-0 mt-1">Vérification de l'égalité Débit = Crédit et soldes par compte (Section 13.5)</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'finances:journal_comptable' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-journal-text me-1"></i>Journal
+            </a>
+            <a href="{% url 'finances:grand_livre' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-book me-1"></i>Grand Livre
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 120px;">N° Compte</th>
+                            <th>Intitulé du compte</th>
+                            <th style="width: 140px;" class="text-end">Mouvements Débit</th>
+                            <th style="width: 140px;" class="text-end">Mouvements Crédit</th>
+                            <th style="width: 140px;" class="text-end">Solde Débiteur</th>
+                            <th style="width: 140px;" class="text-end">Solde Créditeur</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for l in lignes %}
+                        <tr>
+                            <td class="font-monospace fw-bold">{{ l.compte.numero }}</td>
+                            <td>
+                                <a href="{% url 'finances:grand_livre' %}?compte={{ l.compte.id }}" class="text-dark text-decoration-none hover-primary">
+                                    {{ l.compte.intitule }}
+                                </a>
+                            </td>
+                            <td class="text-end font-monospace">{{ l.debit|floatformat:0 }} F</td>
+                            <td class="text-end font-monospace">{{ l.credit|floatformat:0 }} F</td>
+                            <td class="text-end font-monospace text-primary fw-semibold">
+                                {% if l.solde_debiteur > 0 %}{{ l.solde_debiteur|floatformat:0 }} F{% else %}—{% endif %}
+                            </td>
+                            <td class="text-end font-monospace text-success fw-semibold">
+                                {% if l.solde_crediteur > 0 %}{{ l.solde_crediteur|floatformat:0 }} F{% else %}—{% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-pie-chart fs-1 opacity-50 d-block mb-2"></i>
+                                Aucun compte avec des mouvements validés.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light fw-bold border-top-2">
+                        <tr>
+                            <td colspan="2">TOTAL GÉNÉRAL DE LA BALANCE</td>
+                            <td class="text-end font-monospace">{{ cumul_debit|floatformat:0 }} F</td>
+                            <td class="text-end font-monospace">{{ cumul_credit|floatformat:0 }} F</td>
+                            <td colspan="2" class="text-center">
+                                {% if cumul_debit == cumul_credit %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">
+                                        <i class="bi bi-check-circle me-1"></i>Balance équilibrée (Écart : 0 F)
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Écart détecté
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

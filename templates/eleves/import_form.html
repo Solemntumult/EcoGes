@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Importation de dossiers élèves{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'eleves:liste' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="page-title mb-0">Importation de dossiers élèves (Excel / CSV)</h1>
+        </div>
+        <p class="text-muted mb-0 mt-1">Parcours guidé et sécurisé en 3 étapes : fichier modèle, prévisualisation/vérification des doublons, confirmation.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Étape 1 : Téléchargement du modèle -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 fw-semibold text-primary">
+                    <i class="bi bi-1-circle-fill me-2"></i>1. Télécharger le modèle conforme
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        Pour garantir un traitement sans erreur, vos colonnes doivent respecter l'ordre et les entêtes du modèle officiel.
+                    </p>
+                    <div class="p-3 bg-light rounded border mb-3">
+                        <h6 class="fw-bold mb-2 small text-dark"><i class="bi bi-info-circle me-1 text-primary"></i>Règles essentielles :</h6>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li><strong>Nom, Prénoms, Sexe (M/F), Date de naissance, Classe</strong> sont obligatoires.</li>
+                            <li>La <strong>Classe</strong> doit exister dans l'année scolaire sélectionnée (ex: <em>6e A</em>).</li>
+                            <li>Si un <strong>Matricule</strong> est renseigné, le système tentera de retrouver l'élève existant pour le réinscrire.</li>
+                            <li>Le système vérifie automatiquement les doublons pour ne pas recréer deux fois la même personne.</li>
+                        </ul>
+                    </div>
+                    <a href="{% url 'eleves:modele_import_excel' %}" class="btn btn-outline-success w-100 py-2">
+                        <i class="bi bi-file-earmark-arrow-down-fill me-2"></i>Télécharger le modèle Excel (.xlsx)
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Étape 2 : Chargement du fichier -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 fw-semibold text-primary">
+                    <i class="bi bi-2-circle-fill me-2"></i>2. Sélectionner le fichier et l'année scolaire
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Année scolaire d'affectation</label>
+                            {{ form.annee_scolaire }}
+                            <div class="form-text">Les classes du fichier seront associées à cette année scolaire.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Fichier à analyser (.xlsx ou .csv)</label>
+                            {{ form.fichier }}
+                            {% if form.fichier.errors %}
+                            <div class="text-danger small mt-1">{{ form.fichier.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'eleves:liste' %}" class="btn btn-outline-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-eye me-1"></i>Analyser et prévisualiser les données
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

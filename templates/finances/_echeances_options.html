@@ -1,0 +1,49 @@
+<div id="echeances-container">
+    {% if situation %}
+    <div class="alert alert-info py-2 px-3 small mb-3 d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Situation financière :</strong>
+            Total facturé : {{ situation.total_du|floatformat:0 }} F | Déjà payé : {{ situation.total_paye|floatformat:0 }} F
+        </div>
+        <div>
+            {% if situation.solde > 0 %}
+            <span class="badge bg-danger fs-7">Reste dû : {{ situation.solde|floatformat:0 }} F</span>
+            {% else %}
+            <span class="badge bg-success fs-7"><i class="bi bi-check-circle me-1"></i>Entièrement soldé</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-2 fw-semibold small text-dark">
+        <i class="bi bi-list-check me-1 text-primary"></i>Échéances impayées disponibles pour imputation :
+    </div>
+
+    {% if echeances %}
+    <div class="list-group mb-2">
+        {% for ech in echeances %}
+        <label class="list-group-item d-flex justify-content-between align-items-center cursor-pointer">
+            <div class="d-flex align-items-center gap-2">
+                <input class="form-check-input me-1" type="checkbox" name="echeances" value="{{ ech.id }}">
+                <div>
+                    <div class="fw-semibold small">{{ ech.libelle }}</div>
+                    <div class="text-muted small">Échéance : {{ ech.date_echeance|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-warning-subtle text-dark border border-warning-subtle fw-bold">
+                    {{ ech.solde|floatformat:0 }} F
+                </span>
+            </div>
+        </label>
+        {% endfor %}
+    </div>
+    <div class="form-text small">
+        <i class="bi bi-info-circle me-1"></i>En mode imputation manuelle, cochez les échéances spécifiques à solder en priorité avec ce montant.
+    </div>
+    {% else %}
+    <div class="text-muted small p-3 bg-light rounded text-center border">
+        Aucune échéance impayée trouvée pour cet élève (compte déjà soldé ou échéancier non généré).
+    </div>
+    {% endif %}
+</div>

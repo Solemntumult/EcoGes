@@ -31,21 +31,83 @@ ROLES_COMPTA = ["ADMIN", "SUPERADMIN", "COMPTABLE"]
 
 
 @login_required
-@roles_requis(ROLES_COMPTA)
+@roles_requis(["ADMIN", "SUPERADMIN", "COMPTABLE", "SECRETARIAT"])
 def impayes(request):
-    """Tableau de bord des impayés + relances (UC-30)."""
-    echeances = (
-        Echeance.objects.exclude(statut=Echeance.Statut.PAYE)
-        .select_related("inscription__eleve", "inscription__classe", "type_frais")
-        .order_by("date_echeance")
+    """Tableau de suivi des frais de scolarité par classe et élève avec encaissement direct."""
+    from parametrage.models import AnneeScolaire, Classe
+    from eleves.models import Inscription
+
+    annee = AnneeScolaire.objects.filter(est_courante=True).first()
+    classes = Classe.objects.all().order_by("niveau__ordre", "libelle")
+
+    classe_id = request.GET.get("classe", "")
+    recherche = request.GET.get("q", "").strip()
+    statut_filtre = request.GET.get("statut", "")
+
+    inscriptions_qs = (
+        Inscription.objects.filter(statut="ACTIVE")
+        .select_related("eleve", "classe", "annee_scolaire")
+        .prefetch_related("echeances")
     )
-    aujourdhui = timezone.localdate()
-    total_due = sum((e.solde for e in echeances), Decimal("0"))
-    paginator = Paginator(echeances, 50)
+    if annee:
+        inscriptions_qs = inscriptions_qs.filter(annee_scolaire=annee)
+
+    if classe_id:
+        inscriptions_qs = inscriptions_qs.filter(classe_id=classe_id)
+
+    if recherche:
+        inscriptions_qs = inscriptions_qs.filter(
+            Q(eleve__nom__icontains=recherche)
+            | Q(eleve__prenoms__icontains=recherche)
+            | Q(eleve__matricule__icontains=recherche)
+        )
+
+    lignes = []
+    total_general_du = Decimal("0")
+    total_general_paye = Decimal("0")
+    total_general_reste = Decimal("0")
+
+    for insc in inscriptions_qs.order_by("classe__niveau__ordre", "classe__libelle", "eleve__nom", "eleve__prenoms"):
+        echs = list(insc.echeances.all())
+        du = sum((e.montant_du for e in echs), Decimal("0"))
+        paye = sum((e.montant_paye for e in echs), Decimal("0"))
+        reste = sum((e.solde for e in echs), Decimal("0"))
+
+        a_jour = (reste <= Decimal("0"))
+
+        if statut_filtre == "RETARD" and a_jour:
+            continue
+        if statut_filtre == "A_JOUR" and not a_jour:
+            continue
+
+        total_general_du += du
+        total_general_paye += paye
+        total_general_reste += reste
+
+        lignes.append({
+            "inscription": insc,
+            "eleve": insc.eleve,
+            "classe": insc.classe,
+            "total_du": du,
+            "montant_paye": paye,
+            "reste_a_payer": reste,
+            "a_jour": a_jour,
+            "nb_echeances": len(echs),
+        })
+
+    paginator = Paginator(lignes, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
     contexte = {
-        "echeances": paginator.get_page(request.GET.get("page")),
-        "total_due": total_due,
-        "aujourdhui": aujourdhui,
+        "page_obj": page_obj,
+        "classes": classes,
+        "classe_selectionnee": classe_id,
+        "recherche": recherche,
+        "statut_filtre": statut_filtre,
+        "total_general_du": total_general_du,
+        "total_general_paye": total_general_paye,
+        "total_general_reste": total_general_reste,
+        "annee": annee,
     }
     return render(request, "finances/impayes.html", contexte)
 
@@ -346,3 +408,150 @@ def export_caisse(request):
     reponse["Content-Disposition"] = 'attachment; filename="etat_caisse.xlsx"'
     classeur.save(reponse)
     return reponse
+
+
+# ==============================================================================
+# Endpoint HTMX : Chargement dynamique des échéances (Section 5 & 13)
+# ==============================================================================
+
+@login_required
+@roles_requis(ROLES_COMPTA)
+def charger_echeances(request):
+    """Charge dynamiquement via HTMX les échéances dues de l'élève choisi."""
+    inscription_id = request.GET.get("inscription")
+    echeances = []
+    situation = None
+
+    if inscription_id:
+        inscription = Inscription.objects.filter(pk=inscription_id).first()
+        if inscription:
+            from .services import situation_inscription
+            situation = situation_inscription(inscription)
+            echeances = (
+                Echeance.objects.filter(inscription=inscription)
+                .exclude(statut=Echeance.Statut.PAYE)
+                .order_by("date_echeance")
+            )
+
+    return render(
+        request,
+        "finances/_echeances_options.html",
+        {"echeances": echeances, "situation": situation},
+    )
+
+
+# ==============================================================================
+# Comptabilité Générale en Partie Double (Section 13)
+# ==============================================================================
+
+@login_required
+@roles_requis(ROLES_COMPTA)
+def journal_comptable(request):
+    """Journal des écritures comptables avec filtres et contrôles d'équilibre."""
+    from .models import EcritureComptable, JournalComptable
+
+    journaux = JournalComptable.objects.all()
+    journal_id = request.GET.get("journal")
+    statut = request.GET.get("statut")
+
+    qs = (
+        EcritureComptable.objects.prefetch_related("lignes__compte")
+        .select_related("journal", "valide_par")
+        .order_by("-date_piece", "-numero")
+    )
+    if journal_id:
+        qs = qs.filter(journal_id=journal_id)
+    if statut:
+        qs = qs.filter(statut=statut)
+
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(
+        request,
+        "finances/journal_comptable.html",
+        {
+            "ecritures": page_obj,
+            "journaux": journaux,
+            "journal_selectionne": int(journal_id) if journal_id else None,
+            "statut_selectionne": statut,
+        },
+    )
+
+
+@login_required
+@roles_requis(ROLES_COMPTA)
+def grand_livre(request):
+    """Grand livre des comptes avec solde progressif (Section 13.5)."""
+    from .models import CompteComptable, LigneEcriture
+
+    comptes = CompteComptable.objects.filter(actif=True).order_by("numero")
+    compte_id = request.GET.get("compte")
+    lignes = []
+    compte_selectionne = None
+    total_debit = Decimal("0")
+    total_credit = Decimal("0")
+
+    if compte_id:
+        compte_selectionne = get_object_or_404(CompteComptable, pk=compte_id)
+        lignes = (
+            LigneEcriture.objects.filter(
+                compte=compte_selectionne, ecriture__statut="VALIDEE"
+            )
+            .select_related("ecriture__journal")
+            .order_by("ecriture__date_piece")
+        )
+        total_debit = sum((l.debit for l in lignes), Decimal("0"))
+        total_credit = sum((l.credit for l in lignes), Decimal("0"))
+
+    return render(
+        request,
+        "finances/grand_livre.html",
+        {
+            "comptes": comptes,
+            "compte_selectionne": compte_selectionne,
+            "lignes": lignes,
+            "total_debit": total_debit,
+            "total_credit": total_credit,
+            "solde": total_debit - total_credit,
+        },
+    )
+
+
+@login_required
+@roles_requis(ROLES_COMPTA)
+def balance_comptable(request):
+    """Balance générale des comptes (Section 13.5)."""
+    from .models import CompteComptable, LigneEcriture
+
+    comptes = CompteComptable.objects.filter(actif=True).order_by("numero")
+    lignes_balance = []
+    cumul_debit = Decimal("0")
+    cumul_credit = Decimal("0")
+
+    for c in comptes:
+        mouvements = LigneEcriture.objects.filter(compte=c, ecriture__statut="VALIDEE")
+        d = mouvements.aggregate(s=Sum("debit"))["s"] or Decimal("0")
+        cr = mouvements.aggregate(s=Sum("credit"))["s"] or Decimal("0")
+        if d > 0 or cr > 0:
+            solde = d - cr
+            lignes_balance.append({
+                "compte": c,
+                "debit": d,
+                "credit": cr,
+                "solde_debiteur": solde if solde > 0 else Decimal("0"),
+                "solde_crediteur": -solde if solde < 0 else Decimal("0"),
+            })
+            cumul_debit += d
+            cumul_credit += cr
+
+    return render(
+        request,
+        "finances/balance_comptable.html",
+        {
+            "lignes": lignes_balance,
+            "cumul_debit": cumul_debit,
+            "cumul_credit": cumul_credit,
+        },
+    )
+

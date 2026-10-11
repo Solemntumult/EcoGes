@@ -5,6 +5,7 @@ from decimal import Decimal
 from django import forms
 
 from .models import (
+    Classe,
     ClasseMatiereCoefficient,
     Etablissement,
     HoraireJournalier,
@@ -14,6 +15,8 @@ from .models import (
     PauseHoraire,
     QuotaHoraireMatiere,
 )
+from personnel.models import Personnel
+
 
 
 class EtablissementForm(forms.ModelForm):
@@ -94,8 +97,8 @@ class NiveauForm(forms.ModelForm):
 
     def clean(self):
         donnees = super().clean()
-        if donnees.get("cycle") == Niveau.Cycle.LYCEE and not donnees.get("serie"):
-            self.add_error("serie", "Un niveau du second cycle (Lycée) doit avoir une série.")
+        if donnees.get("cycle") == Niveau.Cycle.SECOND_CYCLE and not donnees.get("serie"):
+            self.add_error("serie", "Un niveau du second cycle doit avoir une série.")
         return donnees
 
 
@@ -125,53 +128,74 @@ class MatiereForm(forms.ModelForm):
 
 
 class AjouterMatiereClasseForm(forms.Form):
-    """Ajout d'une matière à une classe précise, avec son coefficient initial.
+    """Ajout d'une nouvelle matière à une classe précise, avec son coefficient et son quota horaire."""
 
-    Soit on choisit une matière existante du même niveau, soit on en crée une
-    nouvelle (libellé libre) — le coefficient (matière, classe) est toujours saisi.
-    """
-
-    matiere = forms.ModelChoiceField(
-        queryset=Matiere.objects.none(), required=False, label="Matière existante",
-        widget=forms.Select(attrs={"class": "form-select"}),
-    )
     libelle = forms.CharField(
-        max_length=100, required=False, label="… ou nouvelle matière",
+        max_length=100,
+        required=True,
+        label="Nom de la matière",
         widget=forms.TextInput(attrs={
             "class": "form-control",
-            "placeholder": "Nom de la matière (ex. Droit, Art Appliqué)",
+            "placeholder": "Ex. Religion, Dessin, Musique, Informatique...",
+            "autofocus": True,
         }),
+        error_messages={
+            "required": "Veuillez renseigner le nom de la matière.",
+        },
     )
     coefficient = forms.DecimalField(
-        min_value=Decimal("0.5"), max_value=Decimal("20"),
-        initial=Decimal("1"), label="Coefficient",
+        min_value=Decimal("0.5"),
+        max_value=Decimal("20"),
+        initial=Decimal("1"),
+        label="Coefficient",
         error_messages={
             "min_value": "Le coefficient minimum est 0,5.",
             "max_value": "Le coefficient ne peut pas dépasser 20.",
             "invalid": "Coefficient invalide.",
+            "required": "Veuillez préciser le coefficient.",
         },
-        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.5"}),
+        widget=forms.NumberInput(attrs={"class": "form-control text-center font-monospace fw-bold", "step": "0.5"}),
+    )
+    heures_par_semaine = forms.DecimalField(
+        min_value=Decimal("0.5"),
+        max_value=Decimal("30"),
+        initial=Decimal("2"),
+        required=False,
+        label="Quota horaire",
+        widget=forms.NumberInput(attrs={"class": "form-control text-center font-monospace fw-bold", "step": "0.5", "placeholder": "2"}),
     )
 
     def __init__(self, *args, **kwargs):
         self.classe = kwargs.pop("classe", None)
         super().__init__(*args, **kwargs)
-        if self.classe is not None:
-            deja_liees = ClasseMatiereCoefficient.objects.filter(
-                classe=self.classe
-            ).values_list("matiere_id", flat=True)
-            self.fields["matiere"].queryset = (
-                Matiere.objects.filter(niveau=self.classe.niveau)
-                .exclude(pk__in=deja_liees).order_by("libelle")
-            )
+        if self.classe and self.classe.niveau:
+            # En premier cycle, le coefficient est toujours fixé à 1 de base
+            if self.classe.niveau.cycle == Niveau.Cycle.PREMIER_CYCLE:
+                self.fields["coefficient"].initial = Decimal("1")
+                self.fields["coefficient"].widget.attrs["readonly"] = True
+                self.fields["coefficient"].help_text = "Fixé à 1 pour le 1er cycle"
 
-    def clean(self):
-        donnees = super().clean()
-        if not donnees.get("matiere") and not (donnees.get("libelle") or "").strip():
-            raise forms.ValidationError(
-                "Choisissez une matière existante ou saisissez le nom d'une nouvelle matière."
-            )
-        return donnees
+    def clean_libelle(self):
+        libelle = self.cleaned_data.get("libelle", "").strip()
+        if not libelle:
+            raise forms.ValidationError("Le nom de la matière est obligatoire.")
+        if self.classe:
+            # Vérifier si cette matière existe déjà dans cette classe
+            from .models import ClasseMatiereCoefficient
+            existe_deja = ClasseMatiereCoefficient.objects.filter(
+                classe=self.classe,
+                matiere__libelle__iexact=libelle,
+            ).exists()
+            if existe_deja:
+                raise forms.ValidationError(f"La matière « {libelle} » est déjà enseignée dans cette classe.")
+        return libelle
+
+    def clean_coefficient(self):
+        coef = self.cleaned_data.get("coefficient")
+        if self.classe and self.classe.niveau:
+            if self.classe.niveau.cycle == Niveau.Cycle.PREMIER_CYCLE:
+                return Decimal("1")
+        return coef
 
 
 class CoefficientForm(forms.Form):
@@ -241,3 +265,35 @@ class QuotaHoraireForm(forms.ModelForm):
                 "placeholder": "Ex. 4",
             }),
         }
+
+
+class ClasseForm(forms.ModelForm):
+    """Création et modification d'une classe d'un niveau donné."""
+
+    class Meta:
+        model = Classe
+        fields = ["niveau", "libelle", "enseignant_principal", "effectif_max"]
+        widgets = {
+            "niveau": forms.Select(attrs={"class": "form-select"}),
+            "libelle": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Dénomination ou division (ex. 6ème A1, 3ème B, Tle D1)",
+            }),
+            "enseignant_principal": forms.Select(attrs={"class": "form-select"}),
+            "effectif_max": forms.NumberInput(attrs={"class": "form-control", "min": 1, "max": 150}),
+        }
+        labels = {
+            "niveau": "Niveau scolaire",
+            "libelle": "Dénomination de la classe",
+            "enseignant_principal": "Professeur Principal (PP)",
+            "effectif_max": "Capacité maximale d'élèves",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["niveau"].queryset = Niveau.objects.select_related("serie").order_by("cycle", "ordre")
+        self.fields["enseignant_principal"].queryset = Personnel.objects.filter(
+            est_enseignant=True, actif=True
+        ).order_by("nom", "prenoms")
+        self.fields["enseignant_principal"].empty_label = "-- Aucun professeur principal assigné --"
+

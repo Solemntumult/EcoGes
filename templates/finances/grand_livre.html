@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Grand Livre des Comptes{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="page-title mb-0">Grand Livre des Comptes</h1>
+            <p class="text-muted mb-0 mt-1">Détail des mouvements par compte du plan comptable (Section 13.5)</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'finances:journal_comptable' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-journal-text me-1"></i>Journal
+            </a>
+            <a href="{% url 'finances:balance_comptable' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-pie-chart me-1"></i>Balance générale
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Sélection du compte -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 fw-semibold">
+                    Plan de comptes actif
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 500px; overflow-y: auto;">
+                    {% for c in comptes %}
+                    <a href="?compte={{ c.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if compte_selectionne and compte_selectionne.id == c.id %}active{% endif %}">
+                        <div>
+                            <span class="font-monospace fw-bold">{{ c.numero }}</span>
+                            <div class="small text-truncate" style="max-width: 200px;">{{ c.intitule }}</div>
+                        </div>
+                        <span class="badge bg-light text-dark border small">{{ c.get_nature_display|truncatewords:1 }}</span>
+                    </a>
+                    {% empty %}
+                    <div class="p-3 text-muted text-center small">Aucun compte paramétré.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Mouvements du compte sélectionné -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold text-dark">
+                        {% if compte_selectionne %}
+                            Mouvements du compte : <span class="font-monospace text-primary">{{ compte_selectionne.numero }}</span> — {{ compte_selectionne.intitule }}
+                        {% else %}
+                            Sélectionnez un compte à gauche
+                        {% endif %}
+                    </span>
+                    {% if compte_selectionne %}
+                    <span class="badge bg-primary fs-7">Solde : {{ solde|floatformat:0 }} F</span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>N° Pièce</th>
+                                    <th>Libellé écriture</th>
+                                    <th>Centre de coût</th>
+                                    <th class="text-end">Débit</th>
+                                    <th class="text-end">Crédit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for l in lignes %}
+                                <tr>
+                                    <td>{{ l.ecriture.date_piece|date:"d/m/Y" }}</td>
+                                    <td class="font-monospace small">{{ l.ecriture.numero }}</td>
+                                    <td>{{ l.libelle }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ l.get_centre_cout_display }}</span></td>
+                                    <td class="text-end font-monospace">{{ l.debit|floatformat:0 }} F</td>
+                                    <td class="text-end font-monospace">{{ l.credit|floatformat:0 }} F</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-5">
+                                        {% if compte_selectionne %}
+                                            Aucun mouvement validé sur ce compte.
+                                        {% else %}
+                                            Cliquez sur un compte dans la liste pour afficher ses écritures.
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if lignes %}
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td colspan="4">TOTAUX DU COMPTE</td>
+                                    <td class="text-end font-monospace">{{ total_debit|floatformat:0 }} F</td>
+                                    <td class="text-end font-monospace">{{ total_credit|floatformat:0 }} F</td>
+                                </tr>
+                            </tfoot>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

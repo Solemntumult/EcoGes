@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %}Carnet de notes — {{ classe.libelle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'evaluations:mes_evaluations' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h1 class="page-title mb-0">Carnet de Notes — {{ classe.libelle }}</h1>
+                {% if est_pp %}
+                <span class="badge bg-warning text-dark border font-monospace">
+                    <i class="bi bi-star-fill me-1"></i>Vous êtes Professeur Principal (PP)
+                </span>
+                {% endif %}
+            </div>
+            <p class="text-muted mb-0 mt-1">
+                Effectif : <strong>{{ classe.effectif_actuel }}</strong> élèves · 
+                Prof. Principal : <strong>{{ classe.enseignant_principal|default:"Non assigné" }}</strong>
+            </p>
+        </div>
+
+        <div class="d-flex gap-2 align-items-center">
+            <!-- Sélecteur de période -->
+            <form method="get" class="d-flex align-items-center gap-1">
+                {% if matiere_active %}<input type="hidden" name="matiere" value="{{ matiere_active.id }}">{% endif %}
+                <label class="small text-muted me-1 mb-0 fw-semibold">Période :</label>
+                <select name="periode" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for p in periodes %}
+                    <option value="{{ p.id }}" {% if p.id == periode_active.id %}selected{% endif %}>
+                        {{ p.libelle }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <a href="{% url 'evaluations:saisir_notes_classe' classe.id %}{% if matiere_active %}?matiere={{ matiere_active.id }}&periode={{ periode_active.id }}{% endif %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-pencil-square me-1"></i>Saisir des notes
+            </a>
+        </div>
+    </div>
+
+    <!-- Barre d'état de validation PP pour cette classe -->
+    <div class="card shadow-sm border-0 mb-4 {% if val_pp and val_pp.est_valide %}bg-success-subtle border-success-subtle{% else %}bg-warning-subtle border-warning-subtle{% endif %}">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <strong class="d-block text-dark">
+                    {% if val_pp and val_pp.est_valide %}
+                    <i class="bi bi-shield-check text-success me-1"></i>Notes de la classe validées par le Professeur Principal pour {{ periode_active.libelle }}
+                    {% else %}
+                    <i class="bi bi-clock-history text-warning me-1"></i>En attente de validation par le Professeur Principal ({{ classe.enseignant_principal|default:"PP non désigné" }})
+                    {% endif %}
+                </strong>
+                <span class="small text-muted">
+                    {% if val_pp and val_pp.est_valide %}
+                    Validé le {{ val_pp.date_validation|date:"d/m/Y H:i" }} par {{ val_pp.valide_par }}. Les bulletins de cette classe peuvent être générés.
+                    {% else %}
+                    Toutes les matières doivent être renseignées avant que le PP ne clôture la période.
+                    {% endif %}
+                </span>
+            </div>
+
+            {% if est_pp or not est_enseignant %}
+            <form method="post" action="{% url 'evaluations:valider_notes_pp' classe.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="periode" value="{{ periode_active.id }}">
+                {% if val_pp and val_pp.est_valide %}
+                <input type="hidden" name="action" value="annuler">
+                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Dévalider les notes pour permettre de nouvelles saisies ?')">
+                    <i class="bi bi-unlock me-1"></i>Dévalider les notes
+                </button>
+                {% else %}
+                <input type="hidden" name="action" value="valider">
+                <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Confirmez-vous que toutes les notes de la classe sont vérifiées et prêtes pour les bulletins ?')">
+                    <i class="bi bi-check-circle me-1"></i>Valider les notes de la classe (PP)
+                </button>
+                {% endif %}
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Onglets des Matières de la classe -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-2">
+            <ul class="nav nav-pills card-header-pills">
+                {% for cmc in cmcs %}
+                <li class="nav-item">
+                    <a class="nav-link py-1 px-3 {% if cmc.matiere.id == matiere_active.id %}active{% endif %}"
+                       href="?periode={{ periode_active.id }}&matiere={{ cmc.matiere.id }}">
+                        {{ cmc.matiere.libelle }}
+                    </a>
+                </li>
+                {% empty %}
+                <li class="nav-item text-muted small p-2">Aucune matière configurée pour votre profil dans cette classe.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {% if matiere_active %}
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3 border-bottom flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="small fw-semibold text-secondary">
+                    Carnet de notes : <strong class="text-dark">{{ matiere_active.libelle }}</strong> — {{ periode_active.libelle }}
+                </span>
+                <span class="badge bg-white text-dark border ms-1">
+                    Coefficient : <strong>{{ coef_matiere }}</strong>
+                </span>
+            </div>
+            {% if peut_ajouter_interro %}
+            <form method="post" action="{% url 'evaluations:ajouter_interrogation_carnet' classe.pk %}" class="d-inline mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="matiere" value="{{ matiere_active.id }}">
+                <input type="hidden" name="periode" value="{{ periode_active.id }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i>Ajouter une interrogation
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <div class="card-body p-0">
+            <!-- Tableau de bord structuré du carnet de notes -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0 align-middle text-nowrap">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width: 200px;" class="ps-3 align-middle" rowspan="2">Élève</th>
+                            {% if evaluations_interros %}
+                            <th class="text-center bg-info-subtle text-dark border-bottom" colspan="{{ evaluations_interros|length }}">
+                                <span class="fw-semibold">Interrogations</span>
+                            </th>
+                            {% endif %}
+                            <th class="text-center bg-light text-dark align-middle border-bottom" style="width: 75px;" rowspan="2" title="Moyenne des Interrogations">
+                                <span class="fw-bold">MI</span>
+                            </th>
+                            <th class="text-center bg-primary-subtle text-dark align-middle border-bottom" style="min-width: 85px;" rowspan="2">
+                                <div class="fw-bold">Devoir</div>
+                                {% if evaluation_devoir %}
+                                <a href="{% url 'evaluations:saisie_notes' evaluation_devoir.pk %}" class="badge bg-white text-primary border text-decoration-none mt-1" title="Saisir / Modifier le Devoir">
+                                    <i class="bi bi-pencil"></i> Saisir
+                                </a>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-muted mt-1">—</span>
+                                {% endif %}
+                            </th>
+                            <th class="text-center bg-light text-dark align-middle border-bottom" style="width: 75px;" rowspan="2" title="Moyenne Devoir = (MI + Devoir) / 2">
+                                <span class="fw-bold">MD</span>
+                            </th>
+                            <th class="text-center bg-warning-subtle text-dark align-middle border-bottom" style="min-width: 85px;" rowspan="2">
+                                <div class="fw-bold">Compo</div>
+                                {% if evaluation_compo %}
+                                <a href="{% url 'evaluations:saisie_notes' evaluation_compo.pk %}" class="badge bg-white text-primary border text-decoration-none mt-1" title="Saisir / Modifier la Composition">
+                                    <i class="bi bi-pencil"></i> Saisir
+                                </a>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-muted mt-1">—</span>
+                                {% endif %}
+                            </th>
+                            <th class="text-center bg-dark-subtle align-middle" style="width: 100px;" rowspan="2" title="Moyenne sur 20 = (MD + Compo) / 2">
+                                <span class="fw-bold text-dark">Moyenne sur 20</span>
+                            </th>
+                            {% if est_second_cycle %}
+                            <th class="text-center bg-success-subtle align-middle" style="width: 100px;" rowspan="2" title="Moyenne coefficientée = Moyenne sur 20 × Coef ({{ coef_matiere }})">
+                                <span class="fw-bold text-dark">Moyenne coef</span>
+                            </th>
+                            {% endif %}
+                        </tr>
+                        <tr>
+                            <!-- Sous-colonnes Interrogations : I1, I2, I3... avec poubelle rouge flottante au survol -->
+                            {% for ev in evaluations_interros %}
+                            <th class="text-center bg-info-subtle position-relative interro-col-header" style="min-width: 85px;">
+                                <div class="d-flex align-items-center justify-content-center position-relative">
+                                    <span class="small fw-bold text-dark">{{ ev.code_colonne }}</span>
+                                    {% if peut_ajouter_interro %}
+                                    <form method="post" action="{% url 'evaluations:supprimer_interrogation' ev.pk %}" class="btn-suppr-interro position-absolute end-0 top-0" style="margin-top: -2px;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-link text-danger p-0 border-0 shadow-none lh-1" title="Supprimer {{ ev.code_colonne }}" onclick="return confirm('Supprimer définitivement l\'interrogation {{ ev.code_colonne }} et toutes ses notes ? Les autres interrogations seront automatiquement réordonnées.')">
+                                            <i class="bi bi-trash3-fill fs-6"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                                <a href="{% url 'evaluations:saisie_notes' ev.pk %}" class="badge bg-white text-primary border text-decoration-none mt-1" title="Saisir / Modifier {{ ev.code_colonne }}">
+                                    <i class="bi bi-pencil"></i> Saisir
+                                </a>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in lignes_notes %}
+                        <tr>
+                            <!-- Nom & Prénoms sans matricule -->
+                            <td class="ps-3 fw-medium">
+                                <span class="text-dark">{{ ligne.eleve.nom }} {{ ligne.eleve.prenoms }}</span>
+                            </td>
+
+                            <!-- Notes Interrogations -->
+                            {% for n in ligne.notes_i %}
+                            <td class="text-center">
+                                {% if n.valeur is not None %}
+                                <span class="fw-bold {% if n.valeur >= 10 %}text-success{% else %}text-danger{% endif %}">{{ n.valeur }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            {% empty %}
+                            <!-- Si aucune interro configurée -->
+                            {% endfor %}
+
+                            <!-- Moyenne Interrogations (MI) -->
+                            <td class="text-center bg-light">
+                                {% if ligne.moyenne_i is not None %}
+                                <span class="fw-bold {% if ligne.moyenne_i >= 10 %}text-success{% else %}text-danger{% endif %}">{{ ligne.moyenne_i }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Note Devoir unique (D) -->
+                            <td class="text-center bg-primary-subtle">
+                                {% if ligne.note_devoir is not None %}
+                                <span class="fw-bold {% if ligne.note_devoir >= 10 %}text-success{% else %}text-danger{% endif %}">{{ ligne.note_devoir }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Moyenne Devoirs (MD) = (MI + D) / 2 -->
+                            <td class="text-center bg-light">
+                                {% if ligne.moyenne_d is not None %}
+                                <span class="fw-bold {% if ligne.moyenne_d >= 10 %}text-success{% else %}text-danger{% endif %}">{{ ligne.moyenne_d }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Note Composition -->
+                            <td class="text-center bg-warning-subtle">
+                                {% if ligne.note_compo is not None %}
+                                <span class="fw-bold {% if ligne.note_compo >= 10 %}text-success{% else %}text-danger{% endif %}">{{ ligne.note_compo }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Moyenne sur 20 = (MD + Compo) / 2 -->
+                            <td class="text-center bg-dark-subtle">
+                                {% if ligne.moyenne_sur_20 is not None %}
+                                <span class="fs-6 fw-bold {% if ligne.moyenne_sur_20 >= 10 %}text-success{% else %}text-danger{% endif %}">{{ ligne.moyenne_sur_20 }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+
+                            {% if est_second_cycle %}
+                            <!-- Moyenne coefficientée = Moyenne sur 20 * Coef (second cycle uniquement) -->
+                            <td class="text-center bg-success-subtle">
+                                {% if ligne.moyenne_coef is not None %}
+                                <span class="fs-6 fw-bold {% if ligne.moyenne_sur_20 >= 10 %}text-success{% else %}text-danger{% endif %}">{{ ligne.moyenne_coef }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{% if est_second_cycle %}12{% else %}11{% endif %}" class="text-center text-muted py-4">
+                                Aucun élève inscrit dans cette classe.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.interro-col-header .btn-suppr-interro {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.interro-col-header:hover .btn-suppr-interro {
+    opacity: 1;
+    visibility: visible;
+}
+.interro-col-header .btn-suppr-interro button:hover {
+    transform: scale(1.15);
+}
+</style>
+{% endblock %}

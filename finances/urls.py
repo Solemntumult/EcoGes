@@ -19,4 +19,8 @@ urlpatterns = [
     path("remises/", views.remises, name="remises"),
     path("etats-caisse/", views.etats_caisse, name="etats_caisse"),
     path("etats-caisse/export/", views.export_caisse, name="export_caisse"),
+    path("charger-echeances/", views.charger_echeances, name="charger_echeances"),
+    path("comptabilite/journal/", views.journal_comptable, name="journal_comptable"),
+    path("comptabilite/grand-livre/", views.grand_livre, name="grand_livre"),
+    path("comptabilite/balance/", views.balance_comptable, name="balance_comptable"),
 ]

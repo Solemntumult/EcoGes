@@ -58,13 +58,13 @@ PERIODES = [
 ]
 
 NIVEAUX = [
-    ("6ème", Niveau.Cycle.COLLEGE, 1),
-    ("5ème", Niveau.Cycle.COLLEGE, 2),
-    ("4ème", Niveau.Cycle.COLLEGE, 3),
-    ("3ème", Niveau.Cycle.COLLEGE, 4),
-    ("2nde", Niveau.Cycle.LYCEE, 5),
-    ("1ère", Niveau.Cycle.LYCEE, 6),
-    ("Terminale", Niveau.Cycle.LYCEE, 7),
+    ("6ème", Niveau.Cycle.PREMIER_CYCLE, 1),
+    ("5ème", Niveau.Cycle.PREMIER_CYCLE, 2),
+    ("4ème", Niveau.Cycle.PREMIER_CYCLE, 3),
+    ("3ème", Niveau.Cycle.PREMIER_CYCLE, 4),
+    ("2nde", Niveau.Cycle.SECOND_CYCLE, 5),
+    ("1ère", Niveau.Cycle.SECOND_CYCLE, 6),
+    ("Terminale", Niveau.Cycle.SECOND_CYCLE, 7),
 ]
 
 # Séries officielles du second cycle au Bénin (seule la série D est utilisée
@@ -320,7 +320,10 @@ class Command(BaseCommand):
                 cmc, _ = ClasseMatiereCoefficient.objects.get_or_create(
                     classe=classe, matiere=matiere,
                 )
-                coef = coef_par_libelle.get(matiere.libelle, Decimal("1"))
+                if classe.niveau.cycle == Niveau.Cycle.PREMIER_CYCLE:
+                    coef = Decimal("1")
+                else:
+                    coef = coef_par_libelle.get(matiere.libelle, Decimal("1"))
                 if cmc.coefficient != coef:
                     cmc.coefficient = coef
                     cmc.save(update_fields=["coefficient"])
@@ -625,6 +628,8 @@ class Command(BaseCommand):
                 ).first()
                 for ordre, periode in self.periodes.items():
                     for type_eval, coef, decalage in (
+                        ("INTERROGATION", Decimal("1"), 5),
+                        ("INTERROGATION", Decimal("1"), 12),
                         ("DEVOIR", Decimal("1"), 20),
                         ("COMPOSITION", Decimal("2"), 45),
                     ):

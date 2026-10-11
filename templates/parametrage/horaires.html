@@ -3,18 +3,44 @@
 
 {% block content %}
 <div class="container-fluid px-3 px-lg-4 py-4">
-    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <!-- Header principal -->
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
-            <h1 class="page-title mb-0">Horaires scolaires</h1>
-            <p class="text-muted mb-0 mt-1">
-                Définissez les modes d'horaire de l'établissement (journée continue 7h–15h35, journée coupée 7h30–18h30...)
-                et les pauses (récréation, déjeuner) — l'horaire actif s'applique à toutes les classes.
+            <h1 class="page-title mb-1">Horaires & Pauses Scolaires</h1>
+            <p class="text-muted mb-0">
+                Modes d'horaires de l'établissement (journée continue, coupée) et pauses configurées.
             </p>
         </div>
-        <a href="{% url 'parametrage:horaire_creer' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>Nouveau mode d'horaire
-        </a>
+        <div>
+            <a href="{% url 'parametrage:horaire_creer' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Nouveau mode d'horaire
+            </a>
+        </div>
     </div>
+
+    <!-- Palette de navigation du module Emploi du temps -->
+    <ul class="nav nav-pills mb-4 gap-2 bg-light p-2 rounded border">
+        <li class="nav-item">
+            <a class="nav-link text-secondary" href="{% url 'personnel:edt_par_classe' %}">
+                <i class="bi bi-grid-3x3-gap me-2"></i>Grilles par classe
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-secondary" href="{% url 'personnel:edt_enseignant' %}">
+                <i class="bi bi-person-badge me-2"></i>Grilles par enseignant
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-secondary" href="{% url 'personnel:disponibilites_enseignants' %}">
+                <i class="bi bi-person-check me-2"></i>Disponibilités des enseignants
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active fw-semibold" href="{% url 'parametrage:horaires' %}">
+                <i class="bi bi-clock-history me-2"></i>Horaires & pauses scolaires
+            </a>
+        </li>
+    </ul>
 
     {% if not actif %}
     <div class="alert alert-warning">

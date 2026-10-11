@@ -100,20 +100,32 @@ class BulletinsMasseForm(forms.Form):
     """Sélection classe + période pour la génération en masse (UC-23)."""
 
     classe = forms.ModelChoiceField(
-        queryset=Classe.objects.none(), label="Classe",
+        queryset=Classe.objects.none(),
+        label="Classe",
+        required=False,
+        empty_label="— Sélectionner une classe —",
         widget=forms.Select(attrs={"class": "form-select"}),
     )
     periode = forms.ModelChoiceField(
-        queryset=Periode.objects.none(), label="Période",
+        queryset=Periode.objects.none(),
+        label="Période",
+        required=False,
+        empty_label="— Sélectionner une période —",
         widget=forms.Select(attrs={"class": "form-select"}),
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from django.db.models import Q
         annee = AnneeScolaire.objects.filter(est_courante=True).first()
         if annee:
-            self.fields["classe"].queryset = Classe.objects.filter(annee_scolaire=annee).select_related("niveau")
+            self.fields["classe"].queryset = Classe.objects.filter(
+                Q(annee_scolaire=annee) | Q(annee_scolaire__isnull=True)
+            ).select_related("niveau")
             self.fields["periode"].queryset = Periode.objects.filter(annee_scolaire=annee)
+        else:
+            self.fields["classe"].queryset = Classe.objects.all().select_related("niveau")
+            self.fields["periode"].queryset = Periode.objects.all()
 
 
 class DecisionsForm(forms.Form):
@@ -126,6 +138,9 @@ class DecisionsForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from django.db.models import Q
         annee = AnneeScolaire.objects.filter(est_courante=True).first()
         if annee:
-            self.fields["classe"].queryset = Classe.objects.filter(annee_scolaire=annee).select_related("niveau")
+            self.fields["classe"].queryset = Classe.objects.filter(
+                Q(annee_scolaire=annee) | Q(annee_scolaire__isnull=True)
+            ).select_related("niveau")

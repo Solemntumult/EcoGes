@@ -1,0 +1,291 @@
+CAHIER DES CHARGES
+Plateforme Intégrée de Gestion Scolaire (PIGS)
+Enregistrement des élèves · Scolarité & paiements · Facturation · Bulletins · Documents administratifs
+Technologies retenues : Django (Python) · MySQL · phpMyAdmin
+Version 1.0
+Août 2026
+Sommaire
+1. Présentation générale du projet
+1.1. Contexte
+La gestion administrative, pédagogique et financière des établissements scolaires repose encore, dans de nombreux cas, sur des supports papier ou des fichiers bureautiques dispersés (Excel, Word). Cette situation engendre des pertes de temps, des erreurs de saisie, des difficultés de suivi des paiements de la scolarité, une production laborieuse des bulletins et documents administratifs, ainsi qu'un manque de visibilité globale pour la direction de l'établissement.
+Le présent projet vise à concevoir et développer une plateforme de gestion scolaire intégrée, centralisée et sécurisée, permettant à un établissement (école primaire, collège ou lycée) de gérer l'ensemble de son cycle administratif et pédagogique : inscription des élèves, gestion des classes et des enseignements, saisie des notes et génération automatique des bulletins, gestion de la scolarité et des paiements, émission des factures et reçus, ainsi que la production des différents documents administratifs (certificats, attestations, listes, etc.).
+1.2. Objectifs du projet
+L'objectif général est de fournir un outil unique, fiable et évolutif de gestion scolaire. Les objectifs spécifiques sont :
+Dématérialiser et centraliser l'enregistrement et le suivi des élèves sur l'ensemble de leur scolarité.
+Automatiser le calcul des moyennes, des rangs et la génération des bulletins de notes.
+Sécuriser et fiabiliser le suivi des paiements de la scolarité (échéanciers, relances, soldes).
+Générer automatiquement les factures, reçus de paiement et autres documents administratifs (certificats de scolarité, attestations, cartes d'élève, listes de classe, etc.).
+Offrir à la direction des tableaux de bord et statistiques fiables pour le pilotage de l'établissement.
+Réduire les tâches manuelles répétitives du personnel administratif et pédagogique.
+Permettre, à terme, un accès sécurisé et différencié aux parents et aux enseignants (portail).
+1.3. Résultats attendus
+Une application web fonctionnelle basée sur Django et MySQL, déployable en local ou en ligne.
+Une base de données structurée, normalisée et administrable via phpMyAdmin.
+Des bulletins, factures, reçus et attestations générés automatiquement au format PDF.
+Une gestion multi-rôles avec des droits d'accès différenciés (administrateur, censeur/direction des études, secrétariat/comptabilité, enseignant, parent/élève).
+Un système paramétrable (années scolaires, niveaux, classes, matières, barèmes, frais de scolarité) pour s'adapter à différents établissements.
+2. Périmètre du projet
+2.1. Ce que couvre le projet (inclus)
+Gestion des utilisateurs, des rôles et des permissions.
+Gestion de l'année scolaire, des niveaux, des classes, des séries/options et des matières.
+Enregistrement, inscription et réinscription des élèves ; gestion du dossier scolaire.
+Gestion des enseignants et du personnel, affectation aux classes et matières.
+Emploi du temps (consultation, gestion simple).
+Gestion des évaluations : notes, compositions, coefficients, moyennes, rangs.
+Génération automatique des bulletins de notes (par période et annuel) au format PDF.
+Gestion de la scolarité : frais, échéanciers, paiements (espèces, mobile money, virement), soldes et relances.
+Facturation : génération de factures et de reçus de paiement, numérotation automatique, historique.
+Génération de documents administratifs : certificats de scolarité, attestations de réussite, cartes scolaires, listes de classes, relevés de notes.
+Tableaux de bord et statistiques (effectifs, taux de recouvrement, moyennes de classe, etc.).
+Journal d'activité (logs) et sauvegarde de la base de données.
+2.2. Ce que le projet ne couvre pas dans une première version (hors périmètre / évolutions futures)
+Paiement en ligne par carte bancaire ou API mobile money en temps réel (une phase ultérieure pourra l'intégrer).
+Application mobile native (le portail restera accessible en web responsive dans un premier temps).
+Gestion complète de la paie du personnel (peut être ajoutée en module optionnel ultérieur).
+Gestion de la cantine, du transport scolaire et de la bibliothèque (modules optionnels futurs).
+Messagerie SMS/e-mail automatisée en temps réel (peut être ajoutée via une passerelle tierce en V2).
+3. Acteurs du système
+Le système est conçu autour d'une gestion fine des rôles et des permissions (utilisation du système de groupes/permissions de Django, éventuellement étendu). Le tableau ci-dessous présente les principaux acteurs et leurs responsabilités.
+4. Recensement des cas d'utilisation (Use Cases)
+Les cas d'utilisation sont regroupés par module fonctionnel. Chaque cas d'utilisation est identifié par un code unique (UC-xx) repris dans les exigences fonctionnelles détaillées (section 5) et servira de référence pour les tests de recette.
+4.1. Module Authentification & Gestion des utilisateurs
+4.2. Module Paramétrage général
+4.3. Module Gestion des élèves
+4.4. Module Gestion du personnel & emploi du temps
+4.5. Module Évaluations & Bulletins
+4.6. Module Scolarité, Paiements & Facturation
+4.7. Module Documents administratifs
+4.8. Module Statistiques, Rapports & Administration système
+4.9. Module Portail Parents/Élèves (évolution)
+5. Exigences fonctionnelles détaillées
+5.1. Gestion des élèves (UC-11 à UC-16)
+Fiche élève complète : nom, prénoms, date et lieu de naissance, sexe, photo, adresse, contacts des parents/tuteurs, régime (interne/externe), statut (actif, transféré, radié, diplômé).
+Attribution automatique d'un matricule unique à la première inscription (conservé toute la scolarité).
+Historique complet du parcours de l'élève : classes fréquentées par année, résultats, incidents disciplinaires éventuels.
+Gestion des documents joints (acte de naissance, bulletins antérieurs, certificat médical, photo) avec upload et aperçu.
+Réinscription en masse (par classe) avec passage automatique suggéré selon la décision de fin d'année, modifiable au cas par cas.
+Recherche multicritère (nom, matricule, classe, statut de paiement, année) et export de listes.
+5.2. Évaluations et bulletins (UC-20 à UC-25)
+Saisie des notes par enseignant, restreinte à ses matières et classes assignées, avec contrôle de cohérence (plage 0-20, une seule note par évaluation).
+Verrouillage des notes par période une fois validées, avec traçabilité des modifications ultérieures (qui, quand, ancienne/nouvelle valeur).
+Calcul automatique : moyenne par matière (pondérée par coefficient), moyenne générale, rang dans la classe, mention/appréciation selon des seuils paramétrables.
+Génération du bulletin PDF avec en-tête de l'établissement, informations de l'élève, tableau des notes par matière, moyenne, rang, appréciation du conseil de classe et signature.
+Génération en masse (tous les bulletins d'une classe ou de l'établissement en une seule opération, archive ZIP téléchargeable).
+Édition du relevé de notes annuel et de la décision de passage en classe supérieure.
+5.3. Scolarité, paiements et facturation (UC-26 à UC-34)
+Grille tarifaire paramétrable par niveau/classe et par type de frais (inscription, scolarité, examen, tenue, cantine, etc.).
+Génération automatique de l'échéancier de paiement d'un élève à son inscription, avec dates d'échéance modifiables.
+Enregistrement des paiements avec choix du mode (espèces, chèque, virement bancaire, mobile money), imputation automatique sur les échéances les plus anciennes en premier (FIFO), ou manuelle.
+Génération immédiate d'un reçu de paiement numéroté (PDF) après chaque encaissement, avec mention du solde restant dû.
+Génération de factures récapitulatives (par échéance, par trimestre ou soldées) avec numérotation séquentielle unique et infalsifiable (non modifiable après émission, seulement annulable via avoir).
+Tableau de bord des impayés : liste des élèves en retard, montant dû, nombre de jours de retard, génération de lettres de relance.
+Gestion des remises, bourses et exonérations avec motif et validation par un rôle habilité, traçabilité complète.
+Blocage paramétrable de l'accès à certains documents (bulletin, certificat) en cas d'impayé au-delà d'un seuil défini par l'administration.
+États de caisse journaliers/mensuels et journal des recettes exportables (PDF/Excel).
+5.4. Documents administratifs (UC-35 à UC-39)
+Génération à la demande de : certificat de scolarité, attestation de réussite/niveau, relevé de notes, liste de classe, carte scolaire, courriers types (convocation, avertissement, mise en demeure de paiement).
+Modèles de documents personnalisables par l'administrateur (logo, en-tête, pied de page, mentions légales, signature du responsable) sans intervention technique.
+Numérotation et archivage automatique de tous les documents émis, consultables dans l'historique de l'élève.
+Export au format PDF, impression directe et, si besoin, envoi par e-mail.
+5.5. Statistiques et pilotage (UC-40 à UC-42)
+Tableau de bord synthétique : effectifs par classe/niveau/sexe, taux de recouvrement global et par classe, moyenne générale par classe, nombre de documents émis.
+Graphiques d'évolution (effectifs par année, recettes par mois, résultats par période).
+Export des rapports en PDF et Excel.
+Sauvegarde automatique planifiée de la base de données MySQL (quotidienne) et sauvegarde manuelle à la demande, avec procédure de restauration documentée.
+6. Exigences non fonctionnelles
+7. Architecture technique
+7.1. Stack technologique retenue
+Back-end : Django (Python), organisé en applications modulaires (comptes, eleves, personnel, academique, evaluations, finances, documents, statistiques).
+Base de données : MySQL, administrée via phpMyAdmin pour les opérations d'administration, de sauvegarde/restauration et de vérification directe des données.
+Génération de documents PDF : bibliothèque de rendu HTML→PDF (ex. WeasyPrint) à partir de gabarits HTML/CSS personnalisables, ou ReportLab pour les documents à mise en page fine (factures, cartes scolaires).
+Front-end : templates Django (Bootstrap ou équivalent) pour l'interface d'administration/back-office ; possibilité d'interface plus riche (HTMX ou Django REST Framework + front séparé) pour le portail parents en évolution.
+Authentification : système d'utilisateurs Django, étendu par un modèle de profil (rôle, établissement) et le framework de permissions/groupes.
+Tâches asynchrones : file de tâches (ex. Celery + Redis) pour la génération en masse des bulletins/factures et les sauvegardes planifiées (optionnel selon volumétrie).
+Environnement : Python 3.x, Django (dernière version LTS au démarrage du projet), MySQL 8.x, serveur d'application (Gunicorn/Nginx) en production.
+7.2. Architecture applicative (vue logique)
+L'application est structurée en modules (apps Django) faiblement couplés, communiquant via l'ORM et des services internes :
+Module « Comptes » : utilisateurs, rôles, permissions, authentification.
+Module « Paramétrage » : année scolaire, niveaux, classes, matières, grilles tarifaires, barèmes.
+Module « Élèves » : dossiers élèves, inscriptions, réinscriptions, historique.
+Module « Personnel » : enseignants, staff, affectations.
+Module « Évaluations » : notes, moyennes, bulletins.
+Module « Finances » : échéanciers, paiements, factures, reçus, relances.
+Module « Documents » : génération des documents administratifs et gestion des modèles.
+Module « Statistiques » : tableaux de bord, exports.
+7.3. Environnements
+8. Modèle conceptuel de données (entités principales)
+Le modèle ci-dessous présente les entités principales du système et leurs attributs clés. Il sera affiné lors de la phase de conception détaillée (modèle physique de données MySQL, avec clés primaires, clés étrangères, index et contraintes d'intégrité, à administrer via phpMyAdmin).
+Relations principales : un Élève possède plusieurs Inscriptions (une par année scolaire) ; une Inscription rattache l'élève à une Classe et génère un Échéancier ; chaque règlement crée un Paiement lié à un Reçu ; les Notes sont rattachées à une Évaluation et agrégées pour produire un Bulletin ; chaque document généré est tracé dans DocumentAdministratif et JournalActivite.
+9. Contraintes du projet
+9.1. Contraintes techniques
+Utilisation obligatoire de Django comme framework back-end et de MySQL comme système de gestion de base de données.
+Administration de la base de données possible via phpMyAdmin (accès prévu pour l'administrateur technique).
+Compatibilité avec les navigateurs web courants (Chrome, Firefox, Edge) en version récente.
+Respect des bonnes pratiques Django (sécurité, migrations versionnées, séparation des environnements settings).
+9.2. Contraintes organisationnelles
+Disponibilité d'un référent côté établissement pour la validation des maquettes de documents (bulletins, factures, certificats) et des règles de calcul.
+Fourniture par l'établissement des données de paramétrage réelles (grilles tarifaires, liste des classes/matières, logo, mentions légales).
+Formation des utilisateurs finaux (secrétariat, comptabilité, enseignants) à l'utilisation de la plateforme avant mise en production.
+9.3. Contraintes réglementaires
+Protection des données personnelles des élèves et des familles : accès restreint selon le rôle, pas de diffusion publique des informations nominatives.
+Conservation des documents financiers (factures, reçus) conformément aux obligations comptables de l'établissement.
+10. Livrables attendus
+Le présent cahier des charges validé.
+Le dossier de conception (modèle de données détaillé, maquettes des écrans principaux, gabarits des documents).
+Le code source de l'application Django, versionné (dépôt Git).
+La base de données MySQL structurée avec données de paramétrage initiales.
+Le manuel d'utilisation pour chaque profil (administrateur, secrétariat, comptabilité, enseignant).
+Le guide d'installation et de déploiement (procédure pas à pas).
+Le plan et les scripts de sauvegarde/restauration de la base de données.
+Un jeu de tests de recette couvrant les principaux cas d'utilisation.
+11. Planning indicatif (par phases)
+Le planning ci-dessous est indicatif et sera affiné en fonction des ressources disponibles ; il présente un enchaînement logique par lots fonctionnels plutôt que des dates fixes.
+12. Critères de validation et de réception
+Chaque cas d'utilisation (UC-01 à UC-45) fait l'objet d'un scénario de test validé avec le référent de l'établissement.
+Les calculs de moyennes, rangs et échéanciers sont vérifiés sur un jeu de données réel avant mise en production.
+Les documents générés (bulletins, factures, reçus, certificats) sont conformes aux gabarits validés (logo, mentions, mise en page).
+Les droits d'accès sont testés pour chaque rôle (un utilisateur ne doit pas accéder aux fonctions hors de son périmètre).
+Une procédure de sauvegarde et de restauration de la base de données est testée avec succès.
+La documentation (manuel utilisateur, guide d'installation) est livrée et jugée compréhensible par les utilisateurs finaux.
+13. Annexe — Glossaire
+--- TABLE ---
+Acteur | Rôle et responsabilités
+Administrateur / Direction | Accès complet : paramétrage du système, gestion des utilisateurs et des droits, supervision globale, validation des clôtures de période, consultation de toutes les statistiques.
+Censeur / Directeur des études (pédagogique) | Gestion des classes, des emplois du temps, saisie et validation des notes, édition des bulletins, suivi de la discipline et des effectifs.
+Secrétariat / Agent d'accueil | Enregistrement et inscription des élèves, mise à jour des dossiers, édition des documents administratifs courants (certificats, attestations, listes).
+Comptable / Caissier(ère) | Gestion de la scolarité, encaissement des paiements, génération des factures et reçus, suivi des impayés et relances.
+Enseignant | Consultation de ses classes et emplois du temps, saisie des notes de ses matières, consultation des listes d'élèves.
+Parent / Élève (portail, phase ultérieure) | Consultation du dossier, des notes, des bulletins, de l'état des paiements et téléchargement des documents officiels.
+Super-administrateur technique | Administration système : sauvegardes, mises à jour, gestion de la base de données via phpMyAdmin, supervision des journaux.
+
+--- TABLE ---
+Code | Acteur(s) | Cas d'utilisation | Description
+UC-01 | Administrateur | Créer un compte utilisateur | Créer un compte pour un membre du personnel et lui attribuer un rôle (profil de permissions).
+UC-02 | Tous | S'authentifier | Se connecter à la plateforme via identifiant/mot de passe sécurisé (avec gestion des tentatives et verrouillage).
+UC-03 | Tous | Réinitialiser son mot de passe | Demander une réinitialisation de mot de passe par e-mail ou par l'administrateur.
+UC-04 | Administrateur | Gérer les rôles et permissions | Définir des groupes de droits (accès aux modules, lecture/écriture/suppression) et les assigner aux utilisateurs.
+UC-05 | Administrateur | Consulter le journal d'activité | Visualiser l'historique des actions sensibles (connexions, modifications de notes, paiements, suppressions).
+
+--- TABLE ---
+Code | Acteur(s) | Cas d'utilisation | Description
+UC-06 | Administrateur | Paramétrer une année scolaire | Créer une nouvelle année scolaire, définir les périodes (trimestres/semestres) et dates de clôture.
+UC-07 | Administrateur | Gérer les niveaux et classes | Créer/modifier/supprimer les niveaux (ex. 6ème, 5ème...) et les classes (ex. 6ème A) avec capacité maximale.
+UC-08 | Administrateur | Gérer les matières et coefficients | Définir la liste des matières enseignées par niveau, leurs coefficients et enseignants responsables.
+UC-09 | Administrateur | Paramétrer les frais de scolarité | Définir les grilles tarifaires par niveau/classe, les frais annexes (inscription, examens, tenue...) et les échéanciers types.
+UC-10 | Administrateur | Gérer le barème d'évaluation | Configurer le système de notation (sur 20, ECTS, appréciations), les mentions et seuils de passage.
+
+--- TABLE ---
+Code | Acteur(s) | Cas d'utilisation | Description
+UC-11 | Secrétariat | Inscrire un nouvel élève | Saisir les informations personnelles, tuteurs/parents, documents fournis, photo, et affecter l'élève à une classe.
+UC-12 | Secrétariat | Réinscrire un élève | Reconduire le dossier d'un élève existant sur la nouvelle année scolaire, avec passage de classe automatique ou manuel.
+UC-13 | Secrétariat | Modifier / mettre à jour le dossier d'un élève | Mettre à jour les informations personnelles, coordonnées des tuteurs, documents joints.
+UC-14 | Secrétariat | Transférer / radier un élève | Enregistrer un transfert vers un autre établissement, un abandon ou une exclusion, avec archivage du dossier.
+UC-15 | Secrétariat | Rechercher / consulter un dossier élève | Rechercher un élève par nom, matricule ou classe et consulter l'intégralité de son dossier (scolaire et financier).
+UC-16 | Secrétariat | Générer le matricule et la carte scolaire | Attribuer un matricule unique automatique à l'inscription et éditer la carte d'élève (avec code-barres/QR code).
+
+--- TABLE ---
+Code | Acteur(s) | Cas d'utilisation | Description
+UC-17 | Administrateur | Enregistrer un enseignant / membre du personnel | Créer la fiche du personnel (identité, matière(s), qualifications, contrat).
+UC-18 | Administrateur | Affecter un enseignant à une classe/matière | Associer un enseignant à une ou plusieurs classes et matières pour l'année scolaire.
+UC-19 | Direction des études | Gérer l'emploi du temps | Créer et publier les emplois du temps par classe et par enseignant, détecter les conflits d'horaires.
+
+--- TABLE ---
+Code | Acteur(s) | Cas d'utilisation | Description
+UC-20 | Enseignant | Saisir les notes | Saisir les notes des élèves par matière, par évaluation et par période, avec contrôle de plage (0-20).
+UC-21 | Direction des études | Valider / verrouiller les notes | Vérifier, corriger si besoin et verrouiller les notes d'une période avant édition des bulletins.
+UC-22 | Système | Calculer moyennes et rangs | Calculer automatiquement les moyennes par matière, la moyenne générale pondérée et le classement de chaque élève.
+UC-23 | Direction des études | Générer les bulletins | Générer automatiquement le bulletin de notes (PDF) par élève, par classe ou pour tout l'établissement, avec appréciations.
+UC-24 | Direction des études | Éditer le relevé de notes annuel | Produire un relevé consolidé des résultats de l'année (moyennes des périodes, moyenne annuelle, décision de passage).
+UC-25 | Direction des études | Décider du passage en classe supérieure | Enregistrer la décision du conseil de classe (admis, redouble, exclu) à la fin de l'année.
+
+--- TABLE ---
+Code | Acteur(s) | Cas d'utilisation | Description
+UC-26 | Comptable | Définir l'échéancier de paiement d'un élève | Générer l'échéancier de scolarité d'un élève à partir de la grille tarifaire (versements mensuels/trimestriels).
+UC-27 | Comptable | Enregistrer un paiement | Saisir un paiement (espèces, chèque, virement, mobile money), l'imputer sur les échéances dues.
+UC-28 | Comptable | Générer une facture | Émettre une facture de scolarité (frais dus) avec numérotation automatique et détail des rubriques.
+UC-29 | Comptable | Générer un reçu de paiement | Éditer un reçu de paiement (PDF, imprimable) après chaque encaissement.
+UC-30 | Comptable | Suivre les impayés et relances | Lister les élèves en retard de paiement, générer des lettres/avis de relance, bloquer l'accès aux documents si besoin.
+UC-31 | Comptable | Consulter le solde et l'historique d'un élève | Visualiser l'état du compte d'un élève : total dû, total payé, solde restant, historique des transactions.
+UC-32 | Comptable / Admin. | Éditer les états financiers | Produire les états de caisse journaliers, le journal des recettes, le taux de recouvrement par classe/niveau.
+UC-33 | Comptable | Gérer les remises et bourses | Appliquer une réduction, une exonération partielle ou une bourse sur le dossier d'un élève, avec justification et traçabilité.
+UC-34 | Comptable | Annuler / rembourser un paiement | Annuler une transaction erronée ou enregistrer un remboursement, avec motif et validation hiérarchique.
+
+--- TABLE ---
+Code | Acteur(s) | Cas d'utilisation | Description
+UC-35 | Secrétariat | Générer un certificat de scolarité | Éditer automatiquement un certificat attestant que l'élève est régulièrement inscrit.
+UC-36 | Secrétariat | Générer une attestation de réussite/niveau | Éditer une attestation de résultats ou de niveau d'études atteint.
+UC-37 | Secrétariat | Générer la liste de classe / effectifs | Produire la liste nominative des élèves d'une classe, avec filtres (sexe, statut de paiement, etc.).
+UC-38 | Secrétariat | Générer les convocations et courriers types | Produire des courriers administratifs standardisés (convocation parents, avertissement, etc.) à partir de modèles.
+UC-39 | Administrateur | Gérer les modèles de documents | Paramétrer les en-têtes, logos, mentions légales et modèles (bulletins, factures, certificats) de l'établissement.
+
+--- TABLE ---
+Code | Acteur(s) | Cas d'utilisation | Description
+UC-40 | Administrateur | Consulter le tableau de bord | Visualiser en un coup d'œil les effectifs, le taux de recouvrement, les moyennes générales, les alertes.
+UC-41 | Administrateur | Exporter des rapports | Exporter les données et rapports au format PDF/Excel (effectifs, finances, résultats scolaires).
+UC-42 | Super-admin technique | Sauvegarder / restaurer la base de données | Effectuer des sauvegardes régulières (automatiques et manuelles) et restaurer en cas d'incident, via phpMyAdmin/scripts.
+
+--- TABLE ---
+Code | Acteur(s) | Cas d'utilisation | Description
+UC-43 | Parent / Élève | Consulter le dossier et les résultats | Se connecter au portail pour consulter les notes, bulletins et informations personnelles (lecture seule).
+UC-44 | Parent / Élève | Consulter l'état des paiements | Visualiser l'échéancier, les montants payés, le solde restant et télécharger les reçus.
+UC-45 | Parent / Élève | Télécharger les documents officiels | Télécharger bulletins, certificats et attestations générés par l'établissement.
+
+--- TABLE ---
+Catégorie | Exigence
+Sécurité | Authentification sécurisée (hachage des mots de passe via le framework Django), gestion fine des permissions par rôle, protection CSRF/XSS/injection SQL (ORM Django), journalisation des actions sensibles, connexion chiffrée HTTPS en production.
+Fiabilité / Intégrité des données | Contraintes d'intégrité en base (clés étrangères, contraintes d'unicité sur le matricule et les numéros de facture), transactions atomiques pour les opérations financières.
+Performance | Temps de réponse des pages courantes < 2 secondes ; génération d'un bulletin unitaire < 3 secondes ; génération en masse asynchrone (file d'attente) pour ne pas bloquer l'interface.
+Disponibilité | Disponibilité cible ≥ 99% pendant les périodes d'activité scolaire (hors maintenance planifiée).
+Ergonomie | Interface simple, en français, adaptée à des utilisateurs non techniques (secrétariat, comptabilité) ; responsive (utilisable sur ordinateur et tablette).
+Portabilité / Déploiement | Application déployable sur serveur Linux (ou hébergement mutualisé compatible Python/MySQL) ainsi qu'en environnement local pour démonstration.
+Évolutivité | Architecture modulaire Django (apps séparées : élèves, finances, évaluations, documents...) permettant l'ajout de modules futurs sans refonte majeure.
+Maintenabilité | Code documenté, respect des conventions Django (PEP8), séparation claire des couches (modèles, vues, templates/API), tests automatisés sur les fonctions critiques (calcul de moyennes, paiements).
+Sauvegarde / Reprise | Sauvegardes régulières automatisées de la base MySQL, procédure de restauration testée, export possible depuis phpMyAdmin.
+Conformité | Respect des exigences locales de protection des données personnelles des élèves et du personnel (accès restreint aux données sensibles).
+
+--- TABLE ---
+Environnement | Description
+Développement | Poste(s) de développement, base MySQL locale, données de test, débogage Django activé.
+Recette / Test | Environnement de démonstration avec données proches du réel, utilisé pour la validation avec le client.
+Production | Environnement final hébergeant les données réelles de l'établissement, accès sécurisé HTTPS, sauvegardes planifiées.
+
+--- TABLE ---
+Entité | Attributs clés (indicatif)
+Utilisateur | id, nom, prénom, e-mail, mot de passe (hash), rôle, statut actif, date de création
+AnneeScolaire | id, libellé (ex. 2026-2027), date début, date fin, statut (en cours/clôturée)
+Niveau | id, libellé (ex. 6ème), cycle (primaire/collège/lycée), ordre
+Classe | id, niveau (FK), libellé (ex. 6ème A), année scolaire (FK), effectif max, enseignant principal (FK)
+Matiere | id, libellé, coefficient par niveau, enseignant(s) affecté(s)
+Eleve | id, matricule (unique), nom, prénoms, date/lieu de naissance, sexe, photo, régime, statut
+Inscription | id, élève (FK), classe (FK), année scolaire (FK), date d'inscription, statut (nouveau/redoublant/transfert)
+Tuteur | id, élève (FK), nom, lien de parenté, téléphone, e-mail, adresse, contact d'urgence (oui/non)
+Personnel | id, utilisateur (FK), nom, prénoms, fonction, matière(s) enseignée(s), contrat
+Evaluation | id, matière (FK), classe (FK), période, type (devoir/composition), coefficient, date
+Note | id, évaluation (FK), élève (FK), valeur, saisi par (FK), date de saisie, verrouillée (bool)
+Bulletin | id, élève (FK), période, moyenne générale, rang, mention, décision, date de génération, fichier PDF
+GrilleTarifaire | id, niveau (FK), année scolaire (FK), type de frais, montant
+Echeancier | id, inscription (FK), libellé échéance, montant dû, date d'échéance, statut (payé/partiel/impayé)
+Paiement | id, élève (FK), échéance(s) concernée(s), montant, mode de paiement, date, encaissé par (FK), référence
+Facture | id, numéro (unique), élève (FK), date d'émission, montant total, détail des lignes, statut
+Recu | id, numéro (unique), paiement (FK), date d'émission, fichier PDF
+DocumentAdministratif | id, type (certificat/attestation/liste...), élève (FK, optionnel), date, généré par (FK), fichier PDF
+JournalActivite | id, utilisateur (FK), action, objet concerné, date/heure, détail
+
+--- TABLE ---
+Phase | Contenu
+Phase 1 — Cadrage & conception | Validation du cahier des charges, modélisation détaillée des données, maquettes des écrans et gabarits de documents.
+Phase 2 — Développement du socle | Authentification, rôles/permissions, paramétrage (années, classes, matières, grilles tarifaires).
+Phase 3 — Module Élèves & Personnel | Inscription, réinscription, dossiers élèves, gestion du personnel et des affectations.
+Phase 4 — Module Évaluations & Bulletins | Saisie des notes, calculs automatiques, génération des bulletins PDF.
+Phase 5 — Module Finances & Documents | Échéanciers, paiements, factures, reçus, documents administratifs.
+Phase 6 — Statistiques & finitions | Tableaux de bord, exports, journal d'activité, sauvegardes automatiques.
+Phase 7 — Recette & déploiement | Tests avec l'établissement, corrections, formation des utilisateurs, mise en production.
+
+--- TABLE ---
+Terme | Définition
+Échéancier | Ensemble des échéances de paiement de la scolarité d'un élève sur une année scolaire.
+Matricule | Identifiant unique attribué à un élève, conservé sur toute sa scolarité dans l'établissement.
+Bulletin | Document récapitulant les notes, moyennes et appréciations d'un élève pour une période donnée.
+Grille tarifaire | Barème définissant les montants de frais scolaires par niveau et type de frais.
+ORM | Object-Relational Mapping : couche Django assurant la correspondance entre objets Python et tables MySQL.
+phpMyAdmin | Interface web d'administration de bases de données MySQL utilisée pour la supervision et la maintenance.

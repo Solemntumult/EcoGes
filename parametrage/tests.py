@@ -11,6 +11,7 @@ from django.urls import reverse
 
 from comptes.models import Utilisateur
 
+from .forms import NiveauForm
 from .models import (
     AnneeScolaire,
     Classe,
@@ -127,12 +128,12 @@ class GestionnaireMatieresTest(TestCase):
             date_fin=date(2027, 7, 31), est_courante=True,
         )
         self.serie_d = Serie.objects.create(code="D", libelle="Biologie-Géologie")
-        self.sixieme = Niveau.objects.create(libelle="6ème", cycle="COLLEGE", ordre=1)
+        self.sixieme = Niveau.objects.create(libelle="6ème", cycle="PREMIER_CYCLE", ordre=1)
         self.seconde_d = Niveau.objects.create(
-            libelle="2nde", cycle="LYCEE", ordre=5, serie=self.serie_d
+            libelle="2nde", cycle="SECOND_CYCLE", ordre=5, serie=self.serie_d
         )
         self.terminale_d = Niveau.objects.create(
-            libelle="Terminale", cycle="LYCEE", ordre=7, serie=self.serie_d
+            libelle="Terminale", cycle="SECOND_CYCLE", ordre=7, serie=self.serie_d
         )
         self.classe_6a = Classe.objects.create(
             niveau=self.sixieme, annee_scolaire=self.annee, libelle="6ème A"
@@ -227,29 +228,32 @@ class GestionnaireMatieresTest(TestCase):
             )
 
     def test_vues_crud_ajout_modification_retrait(self):
-        # Ajout d'une matière à une classe (1er cycle)
+        # Création directe d'une nouvelle matière pour une classe (1er cycle -> coef 1)
         url_ajout = reverse("parametrage:ajouter_matiere_classe", args=[self.classe_6a.pk])
         reponse = self.client.post(url_ajout, {
-            "matiere": str(self.maths_6e.pk), "libelle": "", "coefficient": "3",
+            "libelle": "Éducation Physique", "coefficient": "1", "heures_par_semaine": "2",
         })
         self.assertRedirects(reponse, reverse("parametrage:classe_matieres", args=[self.classe_6a.pk]))
-        cmc = ClasseMatiereCoefficient.objects.get(classe=self.classe_6a, matiere=self.maths_6e)
-        self.assertEqual(cmc.coefficient, Decimal("3"))
-
-        # Création d'une nouvelle matière directement pour une classe
-        reponse = self.client.post(url_ajout, {
-            "matiere": "", "libelle": "Éducation Physique", "coefficient": "1",
-        })
-        self.assertEqual(reponse.status_code, 302)
         ep = Matiere.objects.get(libelle="Éducation Physique", niveau=self.sixieme)
-        self.assertTrue(ClasseMatiereCoefficient.objects.filter(classe=self.classe_6a, matiere=ep).exists())
+        cmc = ClasseMatiereCoefficient.objects.get(classe=self.classe_6a, matiere=ep)
+        self.assertEqual(cmc.coefficient, Decimal("1"))
+
+        # Création pour une classe de second cycle (coef personnalisable)
+        url_ajout_2d = reverse("parametrage:ajouter_matiere_classe", args=[self.classe_2d.pk])
+        reponse = self.client.post(url_ajout_2d, {
+            "libelle": "Dessin Technique", "coefficient": "3", "heures_par_semaine": "3",
+        })
+        self.assertRedirects(reponse, reverse("parametrage:classe_matieres", args=[self.classe_2d.pk]))
+        dt = Matiere.objects.get(libelle="Dessin Technique", niveau=self.seconde_d)
+        cmc_2d = ClasseMatiereCoefficient.objects.get(classe=self.classe_2d, matiere=dt)
+        self.assertEqual(cmc_2d.coefficient, Decimal("3"))
 
         # Modification du coefficient (sans effet de bord sur les autres classes)
         ClasseMatiereCoefficient.objects.create(classe=self.classe_2d, matiere=self.maths_2nde, coefficient=4)
         url_modif = reverse("parametrage:modifier_coefficient", args=[self.classe_2d.pk, self.maths_2nde.pk])
         self.client.post(url_modif, {"coefficient": "6"})
         cmc.refresh_from_db()
-        self.assertEqual(cmc.coefficient, Decimal("3"))  # la classe 6e n'est pas touchée
+        self.assertEqual(cmc.coefficient, Decimal("1"))  # la classe 6e reste à son coefficient (1 pour 1er cycle)
         cmc_2d = ClasseMatiereCoefficient.objects.get(classe=self.classe_2d, matiere=self.maths_2nde)
         self.assertEqual(cmc_2d.coefficient, Decimal("6"))
 
@@ -288,19 +292,13 @@ class GestionnaireMatieresTest(TestCase):
         reponse = self.client.get(reverse("parametrage:classe_matieres", args=[self.classe_6a.pk]))
         self.assertContains(reponse, "ne peut pas dépasser 20")
 
-    def test_niveau_lycee_sans_serie_refuse(self):
-        """Un niveau du second cycle doit avoir une série."""
-        url = reverse("parametrage:matieres")
-        reponse = self.client.post(url, {
-            "creer_niveau": "1", "libelle": "1ère", "cycle": "LYCEE", "serie": "",
+    def test_niveau_second_cycle_sans_serie_refuse(self):
+        """Un niveau du second cycle doit avoir une série valide."""
+        form = NiveauForm({
+            "libelle": "1ère", "cycle": Niveau.Cycle.SECOND_CYCLE, "serie": "",
         })
-        self.assertRedirects(reponse, url, fetch_redirect_response=False)
-        # Aucun nouveau niveau Lycée sans série créé (celui du setUp a une série)
-        self.assertFalse(
-            Niveau.objects.filter(libelle="1ère", cycle="LYCEE", serie__isnull=True).exists()
-        )
-        reponse = self.client.get(url)
-        self.assertContains(reponse, "doit avoir une série")
+        self.assertFalse(form.is_valid())
+        self.assertIn("serie", form.errors)
 
     def test_acces_restreint(self):
         self.client.logout()

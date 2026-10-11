@@ -3,16 +3,16 @@
 {% block title %}Cahier de Textes Numérique{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-3 px-lg-4 py-3">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
-            <h1 class="h3 mb-0">Cahier de Textes & Devoirs</h1>
-            <p class="text-muted small mb-0">Progression pédagogique, contenus des séances et travaux à domicile</p>
+            <h1 class="page-title mb-0">Cahier de Textes & Travaux de maison</h1>
+            <p class="text-muted small mb-0 mt-1">Suivi réel des séances dispensées, chapitres abordés et devoirs prescrits</p>
         </div>
-        <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <form method="get" class="d-flex gap-2">
                 <select name="classe" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">-- Choisir une classe --</option>
+                    <option value="">-- Sélectionner une classe --</option>
                     {% for c in classes %}
                     <option value="{{ c.id }}" {% if classe_selectionnee and classe_selectionnee.id == c.id %}selected{% endif %}>
                         {{ c.libelle }} ({{ c.niveau.libelle }})
@@ -20,45 +20,107 @@
                     {% endfor %}
                 </select>
             </form>
+            {% if peut_ecrire %}
+            <a href="{% url 'cahier_texte:seance_creer' %}{% if classe_selectionnee %}?classe={{ classe_selectionnee.id }}{% endif %}" class="btn btn-primary btn-sm shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i>Ajouter une séance
+            </a>
+            <a href="{% url 'cahier_texte:devoir_creer' %}{% if classe_selectionnee %}?classe={{ classe_selectionnee.id }}{% endif %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-journal-plus me-1"></i>Prescrire un devoir
+            </a>
+            {% endif %}
         </div>
     </div>
 
     <div class="row g-4">
         <!-- Séances de cours -->
         <div class="col-lg-8">
-            <div class="card shadow-sm h-100">
+            <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <span class="card-header-title">Dernières séances dispensées</span>
+                    <span class="fw-semibold text-dark">
+                        <i class="bi bi-journal-bookmark me-1 text-primary"></i>Séances du cahier de textes
+                    </span>
                     {% if classe_selectionnee %}
-                    <span class="badge bg-primary">{{ classe_selectionnee.libelle }}</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ classe_selectionnee.libelle }}</span>
                     {% endif %}
                 </div>
-                <div class="card-body">
+                <div class="card-body p-3">
                     {% for s in seances %}
-                    <div class="border-bottom pb-3 mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <h5 class="h6 mb-0 fw-bold text-dark">{{ s.titre_chapitre }}</h5>
-                            <span class="badge bg-light text-dark border">{{ s.date|date:"d M Y" }} | {{ s.creneau }}</span>
+                    <div class="border rounded p-3 mb-3 bg-white shadow-sm position-relative">
+                        <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+                            <div>
+                                <h5 class="h6 mb-1 fw-bold text-dark">{{ s.titre_chapitre }}</h5>
+                                <div class="text-muted small">
+                                    <i class="bi bi-book me-1"></i><strong>{{ s.affectation.matiere.libelle }}</strong> — 
+                                    Classe : {{ s.affectation.classe.libelle }} — 
+                                    Enseignant : {{ s.affectation.personnel.nom }} {{ s.affectation.personnel.prenoms }}
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border">{{ s.date|date:"d M Y" }} | {{ s.creneau }}</span>
+                                {% if s.statut == 'DISPENSE' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-circle me-1"></i>Dispensé ({{ s.heures }}h)
+                                    </span>
+                                {% elif s.statut == 'ANNULE' %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle" title="{{ s.motif_statut }}">
+                                        <i class="bi bi-x-circle me-1"></i>Annulé
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" title="{{ s.motif_statut }}">
+                                        <i class="bi bi-clock-history me-1"></i>Reporté
+                                    </span>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="text-muted small mb-2">
-                            <i class="bi bi-book me-1"></i>{{ s.affectation.matiere.nom }} — Enseignant : {{ s.affectation.enseignant.nom }} {{ s.affectation.enseignant.prenoms }}
+
+                        {% if s.motif_statut %}
+                        <div class="alert alert-warning py-1 px-2 small mb-2">
+                            <strong>Motif :</strong> {{ s.motif_statut }}
+                            {% if s.date_report %}— Reporté au : {{ s.date_report|date:"d/m/Y" }}{% endif %}
                         </div>
-                        <p class="mb-2 text-secondary">{{ s.contenu_dispense|linebreaksbr }}</p>
+                        {% endif %}
+
+                        <div class="mb-2 text-secondary small bg-light p-2 rounded">
+                            {{ s.contenu_dispense|linebreaksbr }}
+                        </div>
+
                         {% if s.objectifs_vises %}
-                        <div class="small text-muted bg-light p-2 rounded mb-2">
+                        <div class="small text-muted mb-2">
                             <strong>Objectifs :</strong> {{ s.objectifs_vises }}
                         </div>
                         {% endif %}
-                        {% if s.fichier_support %}
-                        <a href="{{ s.fichier_support.url }}" target="_blank" class="btn btn-xs btn-outline-primary btn-sm">
-                            <i class="bi bi-paperclip"></i> Support de cours joint
-                        </a>
-                        {% endif %}
+
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
+                            <div>
+                                {% if s.fichier_support %}
+                                <a href="{{ s.fichier_support.url }}" target="_blank" class="btn btn-outline-secondary btn-sm py-0">
+                                    <i class="bi bi-paperclip me-1"></i>Support de cours
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% if peut_ecrire %}
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'cahier_texte:seance_modifier' s.pk %}" class="btn btn-sm btn-outline-primary py-0">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </a>
+                                <a href="{% url 'cahier_texte:seance_supprimer' s.pk %}" class="btn btn-sm btn-outline-danger py-0">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                     {% empty %}
                     <div class="text-center text-muted py-5">
                         <i class="bi bi-journal-x fs-1 opacity-50 d-block mb-2"></i>
                         Aucune séance enregistrée pour cette sélection.
+                        {% if peut_ecrire %}
+                        <div class="mt-2">
+                            <a href="{% url 'cahier_texte:seance_creer' %}{% if classe_selectionnee %}?classe={{ classe_selectionnee.id }}{% endif %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Créer la première séance
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
@@ -67,29 +129,55 @@
 
         <!-- Devoirs de maison -->
         <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-white py-3">
-                    <span class="card-header-title">Devoirs à la maison</span>
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold text-dark">
+                        <i class="bi bi-pen me-1 text-primary"></i>Devoirs & Exercices
+                    </span>
+                    {% if peut_ecrire %}
+                    <a href="{% url 'cahier_texte:devoir_creer' %}{% if classe_selectionnee %}?classe={{ classe_selectionnee.id }}{% endif %}" class="btn btn-outline-primary btn-sm py-0">
+                        <i class="bi bi-plus"></i>Ajouter
+                    </a>
+                    {% endif %}
                 </div>
-                <div class="card-body">
+                <div class="card-body p-3">
                     {% for d in devoirs %}
-                    <div class="card border-0 bg-light mb-3 p-3">
+                    <div class="card border-0 bg-light mb-3 p-3 shadow-sm">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="badge bg-warning text-dark">{{ d.affectation.matiere.nom }}</span>
-                            <span class="small text-danger fw-semibold"><i class="bi bi-clock me-1"></i>Pour le {{ d.date_limite|date:"d/m" }}</span>
+                            <span class="badge bg-primary text-white">{{ d.affectation.matiere.libelle }}</span>
+                            <span class="small text-danger fw-semibold">
+                                <i class="bi bi-clock me-1"></i>Pour le {{ d.date_limite|date:"d/m/Y" }}
+                            </span>
                         </div>
-                        <h6 class="fw-bold mb-1">{{ d.titre }}</h6>
-                        <p class="small text-muted mb-2">{{ d.consignes|truncatewords:20 }}</p>
-                        {% if d.fichier_sujet %}
-                        <a href="{{ d.fichier_sujet.url }}" target="_blank" class="btn btn-sm btn-outline-secondary w-100">
-                            <i class="bi bi-download me-1"></i>Télécharger le sujet
-                        </a>
+                        <h6 class="fw-bold mb-1 text-dark">{{ d.titre }}</h6>
+                        <p class="small text-muted mb-2">{{ d.consignes|truncatewords:25 }}</p>
+                        {% if d.est_note %}
+                        <div class="small text-success fw-semibold mb-2">
+                            <i class="bi bi-award me-1"></i>Devoir noté sur {{ d.bareme|floatformat }}
+                        </div>
                         {% endif %}
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                            {% if d.fichier_sujet %}
+                            <a href="{{ d.fichier_sujet.url }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0">
+                                <i class="bi bi-download me-1"></i>Sujet
+                            </a>
+                            {% else %}
+                            <span></span>
+                            {% endif %}
+                            {% if peut_ecrire %}
+                            <form method="post" action="{% url 'cahier_texte:devoir_supprimer' d.pk %}" onsubmit="return confirm('Supprimer ce devoir ?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 border-0 text-muted hover-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </div>
                     {% empty %}
                     <div class="text-center text-muted py-5">
                         <i class="bi bi-check-circle fs-1 opacity-50 d-block mb-2"></i>
-                        Aucun devoir en cours.
+                        Aucun devoir en cours pour cette classe.
                     </div>
                     {% endfor %}
                 </div>

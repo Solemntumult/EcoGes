@@ -9,9 +9,9 @@ class DevoirMaisonInline(admin.StackedInline):
 
 @admin.register(SeanceCours)
 class SeanceCoursAdmin(admin.ModelAdmin):
-    list_display = ("affectation", "date", "creneau", "titre_chapitre")
-    list_filter = ("date", "affectation__classe", "affectation__matiere")
-    search_fields = ("titre_chapitre", "contenu_dispense", "affectation__enseignant__nom")
+    list_display = ("affectation", "date", "creneau", "heures", "titre_chapitre", "statut")
+    list_filter = ("statut", "date", "affectation__classe", "affectation__matiere")
+    search_fields = ("titre_chapitre", "contenu_dispense", "affectation__personnel__nom")
     inlines = [DevoirMaisonInline]
     date_hierarchy = "date"
 

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Journal Comptable{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="page-title mb-0">Journal Général des Écritures</h1>
+            <p class="text-muted mb-0 mt-1">Comptabilité en partie double — Contrôle d'équilibre débit/crédit et traçabilité (Section 13)</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'finances:grand_livre' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-book me-1"></i>Grand Livre
+            </a>
+            <a href="{% url 'finances:balance_comptable' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-pie-chart me-1"></i>Balance des comptes
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres par journal et statut -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">Journal auxiliaire</label>
+                    <select name="journal" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">Tous les journaux</option>
+                        {% for j in journaux %}
+                        <option value="{{ j.id }}" {% if journal_selectionne == j.id %}selected{% endif %}>
+                            {{ j.code }} - {{ j.intitule }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Statut</label>
+                    <select name="statut" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">Tous les statuts</option>
+                        <option value="VALIDEE" {% if statut_selectionne == 'VALIDEE' %}selected{% endif %}>Validée</option>
+                        <option value="BROUILLON" {% if statut_selectionne == 'BROUILLON' %}selected{% endif %}>Brouillon</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <a href="{% url 'finances:journal_comptable' %}" class="btn btn-sm btn-outline-secondary w-100">Réinitialiser</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des pièces comptables -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 140px;">N° Pièce</th>
+                            <th style="width: 110px;">Date</th>
+                            <th style="width: 80px;">Journal</th>
+                            <th>Libellé de l'opération</th>
+                            <th style="width: 120px;" class="text-end">Total Débit</th>
+                            <th style="width: 120px;" class="text-end">Total Crédit</th>
+                            <th style="width: 100px;" class="text-center">Équilibre</th>
+                            <th style="width: 100px;">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in ecritures %}
+                        <tr>
+                            <td class="font-monospace fw-semibold">{{ e.numero }}</td>
+                            <td>{{ e.date_piece|date:"d/m/Y" }}</td>
+                            <td><span class="badge bg-secondary-subtle text-secondary border">{{ e.journal.code }}</span></td>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ e.libelle }}</div>
+                                {% if e.reference_piece %}
+                                <div class="small text-muted">Réf: {{ e.reference_piece }}</div>
+                                {% endif %}
+                                <div class="small text-muted mt-1">
+                                    {% for l in e.lignes.all %}
+                                    <span class="badge bg-light text-dark border me-1">
+                                        {{ l.compte.numero }} ({{ l.centre_cout }}): D={{ l.debit|floatformat:0 }} C={{ l.credit|floatformat:0 }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="text-end font-monospace">{{ e.total_debit|floatformat:0 }} F</td>
+                            <td class="text-end font-monospace">{{ e.total_credit|floatformat:0 }} F</td>
+                            <td class="text-center">
+                                {% if e.est_equilibree %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-lg"></i> Équilibrée</span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-exclamation-triangle"></i> Écart</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if e.statut == 'VALIDEE' %}
+                                    <span class="badge bg-success">Validée</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Brouillon</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-journal-x fs-1 opacity-50 d-block mb-2"></i>
+                                Aucune écriture comptable enregistrée.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if ecritures.paginator.num_pages > 1 %}
+        <div class="card-footer bg-white border-top">
+            {% include "pagination.html" with page_obj=ecritures %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

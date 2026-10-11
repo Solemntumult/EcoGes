@@ -28,7 +28,12 @@ class PaiementForm(forms.ModelForm):
         model = Paiement
         fields = ["inscription", "montant", "mode_paiement", "reference"]
         widgets = {
-            "inscription": forms.Select(attrs={"class": "form-select"}),
+            "inscription": forms.Select(attrs={
+                "class": "form-select",
+                "hx-get": "/finances/charger-echeances/",
+                "hx-trigger": "change",
+                "hx-target": "#echeances-container",
+            }),
             "montant": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0.01"}),
             "mode_paiement": forms.Select(attrs={"class": "form-select"}),
             "reference": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ex. N° de chèque ou transaction"}),

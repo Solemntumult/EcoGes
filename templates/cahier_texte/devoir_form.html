@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Prescrire un devoir de maison{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'cahier_texte:index' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="page-title mb-0">Prescrire un devoir de maison</h1>
+        </div>
+        <p class="text-muted mb-0 mt-1">Travail à domicile ou préparation d'évaluation pour la classe</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Affectation (Classe — Matière — Enseignant) (*)</label>
+                            {{ form.affectation }}
+                            {% if form.affectation.errors %}<div class="text-danger small">{{ form.affectation.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Titre / Intitulé du travail (*)</label>
+                            {{ form.titre }}
+                            {% if form.titre.errors %}<div class="text-danger small">{{ form.titre.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Date de prescription (*)</label>
+                                {{ form.date_prescription }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Date limite de rendu (*)</label>
+                                {{ form.date_limite }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Consignes et exercices à traiter (*)</label>
+                            {{ form.consignes }}
+                        </div>
+
+                        <div class="row g-3 mb-3 align-items-center">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch pt-2">
+                                    {{ form.est_note }}
+                                    <label class="form-check-label fw-semibold">Ce travail sera noté</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Barème (sur /20 par défaut)</label>
+                                {{ form.bareme }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Fichier sujet joint (optionnel)</label>
+                            {{ form.fichier_sujet }}
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <a href="{% url 'cahier_texte:index' %}" class="btn btn-outline-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-send me-1"></i>Publier le devoir
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

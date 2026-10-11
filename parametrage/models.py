@@ -51,12 +51,11 @@ class Serie(models.Model):
 
 class Niveau(models.Model):
     class Cycle(models.TextChoices):
-        PRIMAIRE = "PRIMAIRE", "Primaire"
-        COLLEGE = "COLLEGE", "Collège"
-        LYCEE = "LYCEE", "Lycée"
+        PREMIER_CYCLE = "PREMIER_CYCLE", "Premier Cycle"
+        SECOND_CYCLE = "SECOND_CYCLE", "Second Cycle"
 
     libelle = models.CharField(max_length=50, help_text="Ex. 6ème, 2nde")
-    cycle = models.CharField(max_length=10, choices=Cycle.choices)
+    cycle = models.CharField(max_length=15, choices=Cycle.choices)
     ordre = models.PositiveSmallIntegerField(default=1)
     serie = models.ForeignKey(
         Serie, on_delete=models.SET_NULL, null=True, blank=True,
@@ -73,7 +72,9 @@ class Niveau(models.Model):
 
 class Classe(models.Model):
     niveau = models.ForeignKey(Niveau, on_delete=models.PROTECT, related_name="classes")
-    annee_scolaire = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, related_name="classes")
+    annee_scolaire = models.ForeignKey(
+        AnneeScolaire, on_delete=models.SET_NULL, null=True, blank=True, related_name="classes"
+    )
     libelle = models.CharField(max_length=50, help_text="Ex. 6ème A")
     effectif_max = models.PositiveSmallIntegerField(default=50)
     enseignant_principal = models.ForeignKey(
@@ -81,11 +82,12 @@ class Classe(models.Model):
     )
 
     class Meta:
-        unique_together = ("niveau", "annee_scolaire", "libelle")
         ordering = ["niveau__ordre", "libelle"]
 
     def __str__(self):
-        return f"{self.libelle} ({self.annee_scolaire})"
+        if self.annee_scolaire:
+            return f"{self.libelle} ({self.annee_scolaire})"
+        return self.libelle
 
     @property
     def effectif_actuel(self):

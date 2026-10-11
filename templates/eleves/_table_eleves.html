@@ -1,0 +1,124 @@
+<div id="eleves-table-container">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <span class="fw-semibold text-dark">
+                {% if annee_selectionnee %}
+                    Élèves inscrits en <span class="badge bg-primary">{{ annee_selectionnee.libelle }}</span>
+                {% else %}
+                    Tous les élèves enregistrés (Archives globales)
+                {% endif %}
+                <span class="text-muted fw-normal ms-2 small">({{ total_eleves }} élève{{ total_eleves|pluralize }})</span>
+            </span>
+            <div id="recherche-spinner" class="htmx-indicator spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 130px;">Matricule</th>
+                            <th>Nom & prénoms</th>
+                            <th style="width: 80px;">Sexe</th>
+                            <th>Classe</th>
+                            <th>Tuteur / Contact</th>
+                            <th style="width: 150px;">Solde scolarité</th>
+                            <th class="text-end" style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eleve in eleves %}
+                        <tr>
+                            <td>
+                                <span class="badge badge-soft-secondary font-monospace">{{ eleve.matricule }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'eleves:detail' eleve.pk %}" class="fw-semibold text-dark text-decoration-none hover-primary">
+                                    {{ eleve.nom }} {{ eleve.prenoms }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if eleve.sexe == 'M' %}
+                                    <span class="badge bg-light text-primary border"><i class="bi bi-gender-male"></i> M</span>
+                                {% else %}
+                                    <span class="badge bg-light text-danger border"><i class="bi bi-gender-female"></i> F</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if eleve.inscription_affichee %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">
+                                        {{ eleve.inscription_affichee.classe.libelle }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small italic">Non inscrit</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if eleve.tuteur_principal %}
+                                    <div class="small fw-semibold text-dark">{{ eleve.tuteur_principal.nom_complet }}</div>
+                                    <div class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ eleve.tuteur_principal.telephone }}</div>
+                                {% else %}
+                                    <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if eleve.inscription_affichee %}
+                                    {% if eleve.a_jour %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-check-circle me-1"></i>À jour
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle fw-bold" title="Reste à payer">
+                                            <i class="bi bi-exclamation-circle text-danger me-1"></i>{{ eleve.solde_du|floatformat:0 }} F
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'eleves:detail' eleve.pk %}" class="btn btn-sm btn-outline-primary" title="Voir le dossier">
+                                    <i class="bi bi-folder2-open me-1"></i>Dossier
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-person-x fs-1 opacity-50 d-block mb-2"></i>
+                                Aucun élève ne correspond aux critères de recherche pour cette période.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if eleves.paginator.num_pages > 1 %}
+        <div class="card-footer bg-white border-top">
+            <nav class="d-flex justify-content-between align-items-center">
+                <span class="small text-muted">
+                    Page {{ eleves.number }} sur {{ eleves.paginator.num_pages }}
+                </span>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if eleves.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="#"
+                           hx-get="{% url 'eleves:liste' %}?page={{ eleves.previous_page_number }}&nom={{ request.GET.nom|default:'' }}&matricule={{ request.GET.matricule|default:'' }}&classe={{ request.GET.classe|default:'' }}&annee={{ request.GET.annee|default:'' }}"
+                           hx-target="#eleves-table-container">Précédent</a>
+                    </li>
+                    {% endif %}
+                    {% if eleves.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="#"
+                           hx-get="{% url 'eleves:liste' %}?page={{ eleves.next_page_number }}&nom={{ request.GET.nom|default:'' }}&matricule={{ request.GET.matricule|default:'' }}&classe={{ request.GET.classe|default:'' }}&annee={{ request.GET.annee|default:'' }}"
+                           hx-target="#eleves-table-container">Suivant</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>

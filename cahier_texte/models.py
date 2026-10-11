@@ -4,12 +4,27 @@ from personnel.models import Affectation
 
 class SeanceCours(models.Model):
     """Enregistrement d'une séance de cours dans le cahier de textes numérique."""
+
+    class Statut(models.TextChoices):
+        DISPENSE = "DISPENSE", "Dispensé"
+        ANNULE = "ANNULE", "Annulé"
+        REPORTE = "REPORTE", "Reporté"
+
+    class StatutValidation(models.TextChoices):
+        BROUILLON = "BROUILLON", "Brouillon"
+        VALIDE = "VALIDE", "Validé"
+
     affectation = models.ForeignKey(Affectation, on_delete=models.CASCADE, related_name="seances_cahier_texte")
     date = models.DateField()
     creneau = models.CharField(max_length=50, help_text="Ex. 08:00 - 10:00")
+    heures = models.DecimalField(max_digits=4, decimal_places=2, default=2.00, help_text="Durée en heures")
     titre_chapitre = models.CharField(max_length=200)
     contenu_dispense = models.TextField(help_text="Notions abordées, cours, exercices effectués en classe")
     objectifs_vises = models.TextField(blank=True, help_text="Objectifs pédagogiques de la séance")
+    statut = models.CharField(max_length=15, choices=Statut.choices, default=Statut.DISPENSE)
+    statut_validation = models.CharField(max_length=15, choices=StatutValidation.choices, default=StatutValidation.VALIDE)
+    motif_statut = models.CharField(max_length=255, blank=True, help_text="Motif si la séance est annulée ou reportée")
+    date_report = models.DateField(null=True, blank=True, help_text="Nouvelle date si reportée")
     fichier_support = models.FileField(upload_to="cahier_texte/supports/", blank=True, null=True)
     date_saisie = models.DateTimeField(auto_now_add=True)
 
@@ -19,10 +34,11 @@ class SeanceCours(models.Model):
         ordering = ["-date", "creneau"]
         indexes = [
             models.Index(fields=["affectation", "date"]),
+            models.Index(fields=["statut", "date"]),
         ]
 
     def __str__(self):
-        return f"{self.affectation.classe} - {self.affectation.matiere} ({self.date}) : {self.titre_chapitre}"
+        return f"{self.affectation.classe} - {self.affectation.matiere} ({self.date}) : {self.titre_chapitre} [{self.get_statut_display()}]"
 
 
 class DevoirMaison(models.Model):

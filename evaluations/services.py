@@ -164,7 +164,7 @@ def _ecrire_pdf_bulletin(bulletin, lignes, moyenne, rang, mention, est_annuel):
         "rang": rang,
         "mention": mention,
         "est_annuel": est_annuel,
-        "stats_classe": stats_pour_bulletin(bulletin.inscription.classe, bulletin.periode),
+        "stats_classe": statistiques_classe(bulletin.inscription.classe, bulletin.periode),
     }
     try:
         data = pdf_bytes("evaluations/bulletin_pdf.html", contexte)
@@ -195,22 +195,97 @@ def statistiques_classe(classe, periode=None):
     return {
         "effectif": len(moyennes),
         "moyenne_classe": moyenne_classe,
+        "plus_forte": max(moyennes) if moyennes else None,
+        "plus_faible": min(moyennes) if moyennes else None,
         "mentions": mentions,
     }
 
 
-def stats_pour_bulletin(classe, periode=None):
-    """Statistiques affichées sur le bulletin : effectif, moyennes extrêmes et de classe."""
-    moyennes = []
-    for inscription in Inscription.objects.filter(classe=classe, statut="ACTIVE"):
-        _, moyenne = calculer_moyennes(inscription, periode)
-        if moyenne is not None:
-            moyennes.append(moyenne)
-    if not moyennes:
-        return None
+stats_pour_bulletin = statistiques_classe
+
+
+def verifier_completude_bulletins(classe, periode):
+    """Vérifie la complétude des notes et le respect des dates pour la génération des bulletins.
+
+    Critères métier stricts :
+    1. Calendrier : La période doit être dans sa dernière phase (au plus 14 jours avant date_fin ou terminée).
+    2. Complétude : Pour chaque matière ayant un coefficient, il faut au moins :
+       - 2 interrogations
+       - 2 devoirs
+       - 1 composition / examen
+    3. Chaque élève actif doit avoir une note reportée pour chaque évaluation créée.
+    """
+    from datetime import date, timedelta
+    from django.utils import timezone
+    from parametrage.models import ClasseMatiereCoefficient
+    from .models import Evaluation, Note, ValidationNotesPP
+
+    if not periode:
+        return {
+            "peut_generer": False,
+            "date_autorisee": False,
+            "jours_avant_fin": 0,
+            "est_complet": False,
+            "pp_valide": False,
+            "val_pp": None,
+            "anomalies": ["Période non spécifiée."],
+        }
+
+    aujourdhui = timezone.localdate()
+    jours_avant_fin = (periode.date_fin - aujourdhui).days if periode.date_fin else 0
+    date_autorisee = (jours_avant_fin <= 14) if periode.date_fin else True
+
+    anomalies = []
+    cmcs = ClasseMatiereCoefficient.objects.filter(classe=classe).select_related("matiere")
+    inscriptions = list(Inscription.objects.filter(classe=classe, statut="ACTIVE"))
+    nb_eleves = len(inscriptions)
+
+    if not cmcs.exists():
+        anomalies.append(f"Aucune matière ni coefficient configuré pour la classe {classe.libelle}.")
+
+    for cmc in cmcs:
+        evals = Evaluation.objects.filter(classe=classe, matiere=cmc.matiere, periode=periode)
+        nb_interros = evals.filter(type_evaluation=Evaluation.Type.INTERROGATION).count()
+        nb_devoirs = evals.filter(type_evaluation=Evaluation.Type.DEVOIR).count()
+        nb_compos = evals.filter(type_evaluation=Evaluation.Type.COMPOSITION).count()
+
+        if nb_interros < 2:
+            anomalies.append(
+                f"{cmc.matiere.libelle} : {nb_interros}/2 interrogation(s) saisie(s)."
+            )
+        if nb_devoirs < 2:
+            anomalies.append(
+                f"{cmc.matiere.libelle} : {nb_devoirs}/2 devoir(s) saisi(s)."
+            )
+        if nb_compos < 1:
+            anomalies.append(
+                f"{cmc.matiere.libelle} : examen/composition de fin de période non encore saisi(e)."
+            )
+
+        # Vérifier que tous les élèves ont une note saisie
+        for ev in evals:
+            nb_notes = Note.objects.filter(evaluation=ev).count()
+            if nb_notes < nb_eleves:
+                date_str = ev.date.strftime("%d/%m") if ev.date else ""
+                anomalies.append(
+                    f"{cmc.matiere.libelle} ({ev.get_type_evaluation_display()} du {date_str}) : "
+                    f"notes manquantes ({nb_notes}/{nb_eleves} élèves notés)."
+                )
+
+    val_pp = ValidationNotesPP.objects.filter(classe=classe, periode=periode).first()
+    pp_valide = bool(val_pp and val_pp.est_valide)
+    if not pp_valide:
+        anomalies.append(f"Validation du Professeur Principal (PP) en attente pour {classe.libelle}.")
+
+    est_complet = (len(anomalies) == 0)
+    peut_generer = date_autorisee and est_complet
+
     return {
-        "effectif": len(moyennes),
-        "moyenne_classe": (sum(moyennes, Decimal("0")) / len(moyennes)).quantize(Decimal("0.01")),
-        "plus_forte": max(moyennes),
-        "plus_faible": min(moyennes),
+        "peut_generer": peut_generer,
+        "date_autorisee": date_autorisee,
+        "jours_avant_fin": jours_avant_fin,
+        "est_complet": est_complet,
+        "pp_valide": pp_valide,
+        "val_pp": val_pp,
+        "anomalies": anomalies,
     }

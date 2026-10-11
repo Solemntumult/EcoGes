@@ -1,5 +1,6 @@
 """Vues du module Personnel (UC-17 à UC-19 + rémunération des enseignants)."""
 
+from datetime import date, datetime
 from decimal import Decimal
 
 from django.contrib import messages
@@ -13,10 +14,11 @@ from comptes.mixins import roles_requis
 from comptes.services import journaliser
 from finances.models import FicheDePaie, Paiement
 from finances.services import annuler_fiche_paie, creer_fiche_paie, marquer_fiche_payee
+from parametrage.models import AnneeScolaire, Classe, HoraireJournalier, Matiere, QuotaHoraireMatiere
 
 from .forms import AffectationForm, CreneauForm, PersonnelForm
 from .models import Affectation, CreneauEmploiDuTemps, Personnel
-from .services import detail_remuneration, suivi_quotas, verifier_conflits
+from .services import _chevauche, detail_remuneration, suivi_quotas, verifier_conflits
 
 ROLES_GESTION = ["ADMIN", "SUPERADMIN", "CENSEUR"]
 ROLES_EDITION_EDT = ["ADMIN", "SUPERADMIN", "CENSEUR"]
@@ -105,10 +107,72 @@ JOURS = [c[0] for c in CreneauEmploiDuTemps.Jour.choices]
 @login_required
 @roles_requis(["ADMIN", "SUPERADMIN", "CENSEUR", "SECRETARIAT", "ENSEIGNANT"])
 def edt_par_classe(request):
-    from parametrage.models import AnneeScolaire, Classe
+    from parametrage.models import AnneeScolaire, Classe, QuotaHoraireMatiere, HoraireJournalier
+    from django.db.models import Sum
     annee = AnneeScolaire.objects.filter(est_courante=True).first()
-    classes = Classe.objects.filter(annee_scolaire=annee).select_related("niveau") if annee else Classe.objects.none()
-    return render(request, "personnel/edt_classes.html", {"classes": classes, "annee": annee})
+    horaire_actif = HoraireJournalier.obtenir_actif()
+    classes_qs = Classe.objects.filter(annee_scolaire=annee).select_related("niveau") if annee else Classe.objects.none()
+    
+    classes_stats = []
+    total_creneaux_global = 0
+    total_heures_global = Decimal("0")
+    classes_avec_conflit = 0
+
+    # Pré-chargement des créneaux de l'année pour le calcul rapide
+    creneaux_par_classe = {}
+    if annee:
+        for c in CreneauEmploiDuTemps.objects.filter(affectation__annee_scolaire=annee).select_related("affectation"):
+            cid = c.affectation.classe_id
+            creneaux_par_classe.setdefault(cid, []).append(c)
+
+    # Quotas totaux par classe
+    quotas_par_classe = {}
+    if annee:
+        for q in QuotaHoraireMatiere.objects.filter(classe__annee_scolaire=annee):
+            quotas_par_classe[q.classe_id] = quotas_par_classe.get(q.classe_id, Decimal("0")) + q.heures_par_semaine
+
+    for cl in classes_qs:
+        creneaux_cl = creneaux_par_classe.get(cl.pk, [])
+        nb_creneaux = len(creneaux_cl)
+        heures_planifiees = Decimal("0")
+        conflits_classe = 0
+        
+        # Calcul des heures planifiées et détection de chevauchements internes
+        for i, c1 in enumerate(creneaux_cl):
+            duree = c1.duree_heures
+            heures_planifiees += duree
+            for c2 in creneaux_cl[i+1:]:
+                if c1.jour == c2.jour and _chevauche(c1, c2):
+                    conflits_classe += 1
+
+        quota_total = quotas_par_classe.get(cl.pk, Decimal("0"))
+        if conflits_classe > 0:
+            classes_avec_conflit += 1
+
+        total_creneaux_global += nb_creneaux
+        total_heures_global += heures_planifiees
+
+        pct_couverture = 0
+        if quota_total > 0:
+            pct_couverture = min(100, int((heures_planifiees / quota_total) * 100))
+
+        classes_stats.append({
+            "classe": cl,
+            "nb_creneaux": nb_creneaux,
+            "heures_planifiees": heures_planifiees,
+            "quota_total": quota_total,
+            "pct_couverture": pct_couverture,
+            "conflits": conflits_classe,
+        })
+
+    return render(request, "personnel/edt_classes.html", {
+        "classes_stats": classes_stats,
+        "annee": annee,
+        "horaire_actif": horaire_actif,
+        "total_creneaux_global": total_creneaux_global,
+        "total_heures_global": total_heures_global,
+        "classes_avec_conflit": classes_avec_conflit,
+    })
 
 
 def _aligner_creneau(creneau, plages):
@@ -154,8 +218,64 @@ def generer_edt(request, pk):
     from .services import generer_emploi_du_temps_classe
     classe = get_object_or_404(Classe, pk=pk)
     nb_crees = generer_emploi_du_temps_classe(classe)
-    messages.success(request, f"L'algorithme a généré {nb_crees} blocs de cours provisoires.")
+    messages.success(request, f"L'algorithme a généré {nb_crees} créneaux pour {classe.libelle}.")
     return redirect("personnel:edt_classe", pk=classe.pk)
+
+
+@login_required
+@roles_requis(["ADMIN", "SUPERADMIN", "CENSEUR"])
+def generer_edt_global(request):
+    """Génération automatique de l'emploi du temps pour toutes les classes de l'année active."""
+    from parametrage.models import AnneeScolaire, Classe
+    from .services import generer_emploi_du_temps_classe
+    
+    annee = AnneeScolaire.objects.filter(est_courante=True).first()
+    if not annee:
+        messages.error(request, "Aucune année scolaire active définie.")
+        return redirect("personnel:edt_par_classe")
+        
+    classes = Classe.objects.filter(annee_scolaire=annee).order_by("niveau__ordre", "libelle")
+    if not classes.exists():
+        messages.warning(request, "Aucune classe trouvée pour l'année courante.")
+        return redirect("personnel:edt_par_classe")
+        
+    total_crees = 0
+    classes_traitees = 0
+    for classe in classes:
+        nb = generer_emploi_du_temps_classe(classe)
+        total_crees += nb
+        classes_traitees += 1
+        
+    messages.success(
+        request,
+        f"Génération globale terminée avec succès : {total_crees} créneaux générés au total à travers {classes_traitees} classe(s)."
+    )
+    return redirect("personnel:edt_par_classe")
+
+
+@login_required
+@roles_requis(["ADMIN", "SUPERADMIN", "CENSEUR", "SECRETARIAT"])
+def disponibilites_enseignants(request):
+    """Vue récapitulative des disponibilités de tous les enseignants."""
+    from parametrage.models import AnneeScolaire
+    annee = AnneeScolaire.objects.filter(est_courante=True).first()
+    enseignants = Personnel.objects.filter(fonction="ENSEIGNANT", actif=True).prefetch_related(
+        "disponibilites"
+    ).order_by("nom", "prenoms")
+
+    data = []
+    for ens in enseignants:
+        dispos = ens.disponibilites.filter(annee_scolaire=annee) if annee else []
+        data.append({
+            "enseignant": ens,
+            "dispos": dispos,
+            "nb_creneaux": len(dispos),
+        })
+
+    return render(request, "personnel/disponibilites_enseignants.html", {
+        "enseignants_data": data,
+        "annee": annee,
+    })
 
 
 @login_required

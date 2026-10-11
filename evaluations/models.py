@@ -218,3 +218,24 @@ class DelegueClasse(models.Model):
     def __str__(self):
         return f"{self.eleve} ({self.get_type_delegue_display()} - {self.classe})"
 
+
+class ValidationNotesPP(models.Model):
+    """Validation de complétude des notes d'une classe pour une période par son Professeur Principal (PP)."""
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name="validations_notes_pp")
+    periode = models.ForeignKey(Periode, on_delete=models.CASCADE, related_name="validations_notes_pp")
+    valide_par = models.ForeignKey(
+        "personnel.Personnel", on_delete=models.SET_NULL, null=True, related_name="validations_effectuees_pp"
+    )
+    est_valide = models.BooleanField(default=False)
+    date_validation = models.DateTimeField(auto_now=True)
+    commentaire = models.TextField(blank=True, help_text="Observations du professeur principal")
+
+    class Meta:
+        verbose_name = "Validation des notes (PP)"
+        verbose_name_plural = "Validations des notes (PP)"
+        unique_together = ("classe", "periode")
+
+    def __str__(self):
+        statut = "Validée" if self.est_valide else "En attente"
+        return f"Validation PP {self.classe.libelle} - {self.periode.libelle} [{statut}]"
+

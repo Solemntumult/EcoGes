@@ -9,7 +9,7 @@ from django.utils import timezone
 from eleves.models import Eleve, Inscription
 from evaluations.models import Bulletin
 from finances.models import Echeance, ImputationPaiement, Paiement
-from parametrage.models import AnneeScolaire, Classe, Periode
+from parametrage.models import AnneeScolaire, Classe, Niveau, Periode
 
 
 def effectifs_par_classe(annee=None):
@@ -110,7 +110,10 @@ def tableau_effectifs():
     annee = AnneeScolaire.objects.filter(est_courante=True).first()
     lignes = []
     if annee:
-        for cycle, libelle in [("PRIMAIRE", "Primaire"), ("COLLEGE", "Collège"), ("LYCEE", "Lycée")]:
+        for cycle, libelle in [
+            (Niveau.Cycle.PREMIER_CYCLE, "Premier Cycle"),
+            (Niveau.Cycle.SECOND_CYCLE, "Second Cycle"),
+        ]:
             inscriptions = Inscription.objects.filter(
                 annee_scolaire=annee, statut="ACTIVE", classe__niveau__cycle=cycle
             )

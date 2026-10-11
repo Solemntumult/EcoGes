@@ -1,0 +1,1482 @@
+# PROMPT MAÎTRE — AUDIT, REFONTE FONCTIONNELLE ET PROFESSIONNALISATION D'UNE APPLICATION DE GESTION SCOLAIRE
+
+## 1. Ton rôle et ta mission
+
+Tu interviens en tant qu'**architecte logiciel senior, expert en systèmes d'information scolaires, concepteur UX/UI professionnel, développeur full-stack et spécialiste des systèmes de gestion financière et comptable**.
+
+Ta mission est de réaliser un audit approfondi de l'application de gestion scolaire existante, de comprendre son architecture, ses fonctionnalités, ses données et ses dysfonctionnements, puis de la faire évoluer vers une solution professionnelle, cohérente, fiable, maintenable et réellement utilisable dans un établissement scolaire.
+
+Il ne s'agit pas simplement de moderniser l'apparence de quelques pages. Il faut revoir la cohérence globale du produit : organisation des modules, logique métier, relations entre les données, parcours utilisateurs, automatisations, calculs, sécurité, fiabilité des opérations et qualité de l'interface.
+
+**Tu dois travailler sur le projet existant, et non inventer une nouvelle application sans tenir compte de ce qui est déjà développé.**
+
+Avant toute modification importante, tu dois comprendre ce qui existe réellement dans le code.
+
+### Principes fondamentaux
+
+- Comprendre avant de modifier.
+- Corriger les causes des problèmes, et pas seulement leurs symptômes visuels.
+- Ne pas casser les fonctionnalités qui marchent déjà.
+- Ne pas conserver une fonctionnalité simplement parce qu'elle existe : elle doit être utile et cohérente.
+- Ne pas ajouter de fonctionnalités fictives qui donnent l'impression de fonctionner sans véritable logique métier.
+- Ne pas inventer de données pédagogiques, de coefficients, de tarifs ou de règles financières qui doivent être définis par l'établissement.
+- Privilégier les workflows explicites, les automatismes fiables et les opérations traçables.
+- Préserver les données existantes et prévoir les migrations nécessaires.
+- Concevoir une application qui reste compréhensible lorsque l'établissement compte plusieurs centaines ou milliers d'élèves.
+- Ne pas commencer par développer toutes les applications destinées aux parents et aux enseignants : il faut d'abord fiabiliser le cœur administratif et métier.
+
+Si une décision importante ne peut pas être prise à partir du code, des données ou des exigences disponibles, identifie clairement le point concerné et formule une proposition raisonnable. Ne bloque pas toute l'analyse pour des détails mineurs.
+
+---
+
+# PARTIE I — AUDIT APPROFONDI DE L'EXISTANT
+
+## 2. Examiner le projet avant de le modifier
+
+Commence par analyser le dépôt du projet et l'application existante.
+
+Examine notamment :
+
+- La structure des dossiers et des fichiers.
+- Le framework, les bibliothèques et les technologies utilisées.
+- L'architecture frontend et backend.
+- Les modèles de données et les relations entre les tables.
+- Les API, services, contrôleurs et fonctions métier.
+- L'authentification, les rôles et les permissions.
+- Les formulaires, tableaux, filtres, recherches, dialogues et menus.
+- Les routes et les liens de navigation.
+- Les traitements asynchrones et les erreurs éventuelles.
+- Les règles de validation des données.
+- Les calculs automatiques.
+- Les éventuels modules partiellement développés ou simulés.
+- Les erreurs de console, les exceptions et les opérations qui échouent.
+- Les tests existants et leur couverture.
+- Les risques de duplication, de perte de données ou d'incohérence.
+
+Si l'application est accessible en ligne et que les outils disponibles permettent de la consulter, examine également ses parcours réels.
+
+Ne suppose jamais qu'une fonctionnalité est opérationnelle uniquement parce qu'un bouton, une page ou un formulaire existe.
+
+Pour chaque module, distingue clairement :
+
+1. Ce qui fonctionne correctement.
+2. Ce qui fonctionne partiellement.
+3. Ce qui est défaillant.
+4. Ce qui est incohérent dans la logique métier.
+5. Ce qui est inutile, redondant ou mal placé.
+6. Ce qui manque pour obtenir une solution professionnelle.
+
+Produis une cartographie des modules et de leurs dépendances avant de commencer les changements structurels.
+
+**Important :** ne te contente pas de produire un rapport d'audit. L'audit doit guider une véritable mise en œuvre. Après avoir établi les constats et les priorités, commence à corriger et à améliorer le projet par étapes vérifiables.
+
+---
+
+# PARTIE II — PRINCIPES UX/UI ET QUALITÉ PROFESSIONNELLE
+
+## 3. Repenser l'expérience utilisateur
+
+L'application doit avoir une interface professionnelle, moderne, sobre, cohérente et facile à utiliser par le personnel administratif d'un établissement scolaire.
+
+L'objectif est de réduire les erreurs, les clics inutiles, les ambiguïtés et les manipulations répétitives.
+
+### 3.1. Identité visuelle et composants
+
+Définis ou harmonise un système de design cohérent comprenant :
+
+- Une palette de couleurs professionnelle.
+- Une typographie lisible et une hiérarchie visuelle claire.
+- Des espacements réguliers.
+- Des boutons avec des styles et des comportements cohérents.
+- Des champs de formulaire uniformes.
+- Des tableaux lisibles.
+- Des cartes utilisées uniquement lorsqu'elles apportent une réelle valeur.
+- Des fenêtres modales adaptées aux opérations concernées.
+- Des états de chargement, de succès, d'erreur et de liste vide.
+- Des confirmations pour les opérations destructrices ou irréversibles.
+- Des messages d'erreur compréhensibles et des indications permettant de résoudre le problème.
+
+Évite les interfaces surchargées, les décorations inutiles, les effets visuels excessifs et les composants qui prennent de la place sans aider l'utilisateur.
+
+**N'utilise pas de stickers, d'emojis décoratifs ou d'illustrations fantaisistes pour donner artificiellement un aspect moderne à l'application.** Utilise des icônes professionnelles, cohérentes et discrètes provenant d'une bibliothèque adaptée à la technologie existante.
+
+### 3.2. Navigation
+
+Réorganise la navigation selon les tâches réelles de l'administration scolaire.
+
+Les modules doivent être regroupés logiquement, avec des intitulés explicites. Évite les doublons, les menus ambigus et les fonctionnalités difficiles à retrouver.
+
+Les paramètres doivent se trouver à proximité du module auquel ils se rapportent lorsque cela facilite la compréhension. Par exemple, les paramètres des horaires de cours doivent être accessibles depuis la configuration de l'emploi du temps.
+
+### 3.3. Recherche, filtres et tableaux
+
+Pour les pages comportant de nombreuses données :
+
+- La recherche doit filtrer les résultats automatiquement au fur et à mesure de la saisie.
+- Des suggestions peuvent apparaître pendant la saisie lorsqu'elles sont pertinentes.
+- Les filtres doivent actualiser immédiatement les résultats après modification.
+- Ne demande pas à l'utilisateur de cliquer sur un bouton « Rechercher » si la recherche peut être effectuée automatiquement de manière fiable.
+- Prévois un délai de saisie ou une optimisation adaptée si les recherches déclenchent des requêtes serveur.
+- Affiche clairement les filtres actifs et facilite leur réinitialisation.
+- Prévois une pagination ou un chargement adapté aux grandes listes.
+- Les actions principales doivent être visibles, et les actions secondaires ne doivent pas encombrer chaque ligne.
+- Les opérations groupées doivent être compréhensibles, avec une sélection explicite des éléments concernés.
+- Les tableaux doivent permettre une lecture rapide des informations importantes.
+
+Les formulaires doivent fournir des validations utiles, conserver les saisies lorsqu'une erreur survient et expliquer précisément les champs invalides.
+
+### 3.4. États et retours utilisateur
+
+Chaque action doit avoir un résultat explicite.
+
+Lorsqu'un utilisateur crée, modifie, supprime, valide, importe, exporte ou paie quelque chose, l'application doit indiquer ce qui s'est réellement passé.
+
+Ne présente jamais une opération comme réussie si le serveur ou la base de données ne l'a pas confirmée.
+
+Évite les boutons inactifs, les actions qui ne produisent aucun effet, les erreurs techniques incompréhensibles et les pages qui affichent des données fictives pour remplir l'espace.
+
+### 3.5. Responsive design et accessibilité
+
+L'interface doit être adaptée aux dimensions d'écran réellement utilisées, selon la technologie existante.
+
+Assure-toi notamment que :
+
+- Les tableaux restent utilisables sur les petits écrans.
+- Les formulaires ne deviennent pas trop larges.
+- Les dialogues ne débordent pas de l'écran.
+- Les contrastes et les tailles de texte restent lisibles.
+- Les champs disposent de libellés explicites.
+- Les états ne sont pas communiqués uniquement par la couleur.
+- La navigation au clavier est prise en compte lorsque la plateforme le permet.
+
+---
+
+# PARTIE III — ORGANISATION DES MODULES
+
+## 4. Revoir le tableau de bord d'accueil
+
+Le tableau de bord actuel semble accorder une place importante aux statistiques sans nécessairement aider l'utilisateur à travailler.
+
+Reconsidère son utilité et sa hiérarchie.
+
+Le tableau de bord doit permettre de comprendre rapidement la situation de l'établissement et les actions prioritaires.
+
+Il peut présenter, selon les données réellement disponibles :
+
+- Les effectifs de l'année scolaire active.
+- La répartition des élèves par niveau et par classe.
+- Les inscriptions et réinscriptions en attente.
+- Les opérations administratives nécessitant une action.
+- L'état des paiements et des frais scolaires.
+- Les informations importantes du calendrier scolaire.
+- Les prochains examens ou événements.
+- Les anomalies ou opérations en attente de validation.
+- Des indicateurs financiers utiles, lorsqu'ils sont fiables.
+
+Ne cherche pas à afficher le maximum de statistiques.
+
+Chaque indicateur doit avoir une utilité claire, une définition précise et, lorsque c'est pertinent, un lien permettant d'accéder directement aux éléments correspondants.
+
+N'affiche pas de chiffres inventés ou calculés à partir de données incomplètes. Si une donnée n'est pas disponible, affiche un état explicite.
+
+---
+
+## 5. Module des élèves
+
+### 5.1. Affichage par année scolaire
+
+Par défaut, la liste des élèves doit afficher uniquement les élèves inscrits dans l'année scolaire active.
+
+L'utilisateur doit pouvoir sélectionner une autre année scolaire pour consulter les inscriptions antérieures.
+
+Il faut distinguer clairement :
+
+- La personne, qui représente l'identité durable de l'élève.
+- Son inscription dans un établissement.
+- Son inscription dans une année scolaire.
+- Sa classe pour cette année.
+- Son historique scolaire.
+- Son état actuel dans le processus administratif.
+
+Un changement de classe ou d'année ne doit pas créer inutilement une nouvelle identité pour le même élève.
+
+### 5.2. Historique pluriannuel
+
+Prévois un historique permettant de retrouver le parcours d'un élève sur plusieurs années :
+
+- Années scolaires fréquentées.
+- Classes successives.
+- Changements de classe.
+- Réinscriptions.
+- Transferts, départs ou interruptions, lorsque ces situations sont prises en charge.
+- Statuts historiques.
+- Documents et informations associés à chaque période, selon les règles de conservation retenues.
+
+Un utilisateur doit pouvoir comprendre facilement où se trouvait l'élève pendant une année scolaire donnée.
+
+Ne fusionne pas plusieurs années d'inscription dans un seul enregistrement qui ferait perdre l'historique.
+
+Si une comparaison ou une vue consolidée de plusieurs années est utile, elle doit rester distincte de la liste normale de l'année active.
+
+### 5.3. Archivage
+
+Étudie une stratégie d'archivage adaptée aux élèves des années antérieures.
+
+L'archivage ne doit pas signifier suppression des données historiques. Il faut conserver les informations nécessaires aux bulletins, aux justificatifs, à la comptabilité, aux recherches et aux obligations de l'établissement.
+
+Les règles de durée de conservation et d'archivage doivent être configurables ou clairement documentées plutôt que supposées arbitrairement.
+
+Prévois des exports adaptés aux besoins administratifs.
+
+### 5.4. Champs et statuts
+
+Examine les champs tels que « régime » et « statut ».
+
+S'ils sont ambigus, détermine ce qu'ils représentent réellement. Renomme-les ou explique-les dans l'interface.
+
+Évite d'utiliser un même champ pour représenter plusieurs notions différentes.
+
+Par exemple, le statut d'une personne, celui de son inscription et celui d'un paiement ne doivent pas être confondus.
+
+### 5.5. Réinscriptions et importation Excel
+
+Revois complètement le parcours de réinscription groupée s'il est peu compréhensible.
+
+L'importation Excel doit être guidée et sécurisée :
+
+1. Télécharger ou consulter un modèle d'importation.
+2. Sélectionner le fichier.
+3. Vérifier les colonnes et les formats.
+4. Prévisualiser les lignes reconnues.
+5. Signaler les erreurs et les doublons potentiels.
+6. Permettre de corriger les problèmes lorsque c'est possible.
+7. Afficher un récapitulatif des opérations qui seront effectuées.
+8. Confirmer l'importation.
+9. Présenter le résultat final, les lignes traitées et les erreurs éventuelles.
+
+Ne crée pas silencieusement de nouveaux élèves lorsqu'un élève existant a simplement besoin d'être réinscrit.
+
+La détection des doublons doit tenir compte des informations disponibles et permettre une vérification humaine en cas d'incertitude.
+
+Une erreur sur une ligne ne doit pas entraîner la perte silencieuse de l'ensemble du traitement.
+
+---
+
+## 6. Module des classes
+
+Revois la manière dont les classes sont créées, identifiées et affichées.
+
+### 6.1. Niveaux scolaires
+
+Le système doit pouvoir gérer les niveaux suivants :
+
+**Premier cycle :**
+- 6e
+- 5e
+- 4e
+- 3e
+
+**Second cycle :**
+- Seconde
+- Première
+- Terminale
+
+Les niveaux et leur appartenance à un cycle doivent être structurés dans les données plutôt que codés de manière fragile dans plusieurs écrans.
+
+### 6.2. Dénomination des classes
+
+Distingue clairement :
+
+- Le niveau scolaire.
+- La dénomination ou division de la classe : A, B, C, A1, A2, etc.
+- La série, lorsque le niveau la requiert.
+- L'année scolaire à laquelle appartient la classe.
+- Le professeur principal ou responsable de classe.
+- L'effectif et les élèves inscrits.
+
+Évite les champs redondants « classe » et « type » lorsqu'ils affichent tous deux la même information.
+
+Le nom affiché doit être construit de manière cohérente à partir des éléments nécessaires, sans imposer une concaténation rigide qui ne correspondrait pas à toutes les conventions de l'établissement.
+
+Le premier cycle ne doit pas obliger l'utilisateur à choisir une série si ce concept n'y est pas applicable.
+
+Le second cycle doit permettre de sélectionner une série lorsque cela est nécessaire.
+
+### 6.3. Organisation de l'interface
+
+Si cela améliore l'utilisation, distingue le premier et le second cycle par des onglets ou des filtres.
+
+La création et la modification des classes doivent être simples et éviter les ambiguïtés.
+
+L'effectif affiché doit correspondre aux inscriptions réellement actives dans la bonne année scolaire, et non à une valeur indépendante qui deviendrait rapidement incorrecte.
+
+Une classe appartenant à une année scolaire clôturée doit conserver son historique. Elle ne doit pas être modifiée silencieusement lorsqu'une nouvelle année scolaire commence.
+
+---
+
+## 7. Module du personnel et des enseignants
+
+Le système doit distinguer les différents types de personnel et les responsabilités associées.
+
+### 7.1. Informations du personnel
+
+Prévois une structure adaptée aux informations professionnelles, aux fonctions, aux affectations, aux contrats ou modalités de rémunération et à l'historique des affectations, selon les besoins réels du projet.
+
+Distingue notamment :
+
+- Les enseignants.
+- Le personnel administratif.
+- Les autres catégories de personnel effectivement gérées par l'établissement.
+
+Ne force pas tous les employés à suivre le même mécanisme de rémunération.
+
+### 7.2. Professeur principal
+
+La désignation du professeur principal doit être gérée depuis une interface logique, par exemple depuis la classe ou depuis la fiche d'affectation du personnel.
+
+Il faut pouvoir déterminer quel enseignant est responsable d'une classe pendant une année scolaire précise.
+
+Cette responsabilité peut changer d'une année à l'autre. L'historique doit être conservé.
+
+Empêche les affectations contradictoires, selon les règles que l'établissement décidera d'appliquer.
+
+### 7.3. Disponibilités et affectations
+
+Les disponibilités des enseignants doivent être prises en compte lors de la génération des emplois du temps.
+
+Il faut distinguer les disponibilités déclarées, les contraintes horaires, les cours planifiés et les cours réellement dispensés.
+
+Une affectation à une classe ou à une matière ne doit pas être confondue avec la preuve qu'un cours a effectivement eu lieu.
+
+---
+
+# PARTIE IV — ANNÉE SCOLAIRE ET CALENDRIER : LE SOCLE DU SYSTÈME
+
+## 8. Créer une gestion centrale de l'année scolaire
+
+C'est l'un des éléments les plus importants de toute l'application.
+
+**L'année scolaire ne doit pas être une simple étiquette ou un filtre. Elle doit être le référentiel temporel central qui organise les données pédagogiques, les emplois du temps, les inscriptions, les périodes d'examen, les rémunérations et les opérations de clôture.**
+
+Tous les modules concernés doivent utiliser une référence cohérente à l'année scolaire.
+
+### 8.1. Paramétrage
+
+L'administrateur doit pouvoir créer et configurer une année scolaire en renseignant notamment :
+
+- Le libellé.
+- La date de début.
+- La date de fin.
+- Le statut : préparation, active, clôturée ou autre état justifié par le workflow.
+- Les périodes pédagogiques.
+- Le calendrier scolaire.
+- Les périodes d'examens et de compositions.
+- Les vacances et les congés scolaires.
+- Les jours fériés et fermetures.
+- Les événements scolaires.
+- Les paramètres nécessaires aux modules dépendants.
+
+Les dates doivent être librement configurables.
+
+Par exemple, une année scolaire peut commencer le 15 septembre 2026 et se terminer le 19 mai de l'année suivante. Il s'agit simplement d'un exemple de configuration : le système ne doit imposer aucune de ces dates.
+
+L'année scolaire peut traverser deux années civiles. Il faut donc distinguer correctement :
+
+- L'année scolaire.
+- L'année civile.
+- Le mois civil.
+- La période pédagogique.
+- La période de paie.
+- La période comptable.
+
+Ces périodes peuvent être liées, mais elles ne sont pas interchangeables.
+
+### 8.2. Périodes pédagogiques
+
+Permets à l'établissement de définir ses propres périodes, par exemple :
+
+- Trimestres.
+- Semestres.
+- Périodes intermédiaires.
+- Périodes de révision.
+- Compositions.
+- Examens.
+- Congés et vacances.
+- Autres événements pédagogiques.
+
+Ne suppose pas que tous les établissements utilisent le même nombre de trimestres ou de semestres.
+
+Chaque période doit disposer des dates nécessaires et d'un type clairement identifié.
+
+Les périodes doivent être visibles dans un calendrier annuel et faciles à modifier tant que les règles de validation le permettent.
+
+Le système doit détecter les incohérences de dates, les périodes impossibles et les chevauchements problématiques. Certains événements peuvent légitimement se chevaucher : il ne faut donc pas interdire tous les chevauchements sans distinguer leur nature.
+
+### 8.3. Calendrier annuel complet
+
+L'administrateur doit pouvoir visualiser toute l'année scolaire sur une vue annuelle, avec une représentation claire des périodes.
+
+Le calendrier doit permettre d'identifier rapidement :
+
+- Les périodes normales de cours.
+- Les vacances.
+- Les jours fériés.
+- Les fermetures exceptionnelles.
+- Les périodes de révision.
+- Les périodes de devoirs et de compositions.
+- Les examens.
+- Les événements importants.
+- Les éventuelles modifications du calendrier.
+
+L'utilisateur doit pouvoir sélectionner une période pour voir ou modifier ses informations.
+
+Les changements du calendrier doivent avoir des conséquences explicites sur les modules concernés. Ils ne doivent pas réécrire silencieusement les historiques déjà validés.
+
+### 8.4. Années scolaires multiples
+
+Le système doit permettre de conserver plusieurs années scolaires.
+
+Il doit être possible de préparer la prochaine année sans modifier les données de l'année active.
+
+Le passage à une nouvelle année doit être une opération maîtrisée, avec les étapes nécessaires pour préparer les classes, les inscriptions, les affectations, les paramètres et le calendrier.
+
+L'activation d'une nouvelle année ne doit pas effacer les inscriptions précédentes, les cours effectués, les rémunérations calculées ou les écritures comptables.
+
+Prévois des contrôles empêchant la création involontaire de plusieurs années actives incompatibles avec les règles retenues.
+
+---
+
+# PARTIE V — MATIÈRES, COEFFICIENTS ET VOLUMES HORAIRES
+
+## 9. Construire une configuration pédagogique pilotée par les données
+
+Le système doit disposer de tables de référence structurées permettant de configurer les matières et leurs paramètres selon le contexte scolaire.
+
+Cependant, **je remplirai moi-même les données de référence pédagogiques. Tu ne dois donc inventer ni préremplir les coefficients, ni les volumes horaires, ni les associations officielles entre matières, classes, cycles et séries.**
+
+Tu dois construire le mécanisme permettant de saisir, modifier, consulter, valider et utiliser ces données.
+
+### 9.1. Référentiel des matières
+
+Prévois les entités nécessaires pour gérer :
+
+- Les matières.
+- Les cycles et niveaux concernés.
+- Les classes ou catégories de classes concernées.
+- Les séries lorsque cela est pertinent.
+- Les coefficients.
+- Les volumes horaires prévus.
+- Les autres paramètres pédagogiques réellement nécessaires.
+
+La structure exacte doit être adaptée à l'architecture existante, mais les relations doivent rester explicites et éviter la duplication inutile des données.
+
+Une matière peut être enseignée dans plusieurs niveaux ou séries, avec des coefficients et des volumes horaires différents selon le contexte.
+
+Une école doit également pouvoir créer des matières personnalisées lorsque ses besoins le nécessitent.
+
+### 9.2. Saisie et modification
+
+L'administration doit pouvoir renseigner elle-même toutes les valeurs.
+
+L'interface doit notamment permettre :
+
+- La création de matières.
+- La modification des libellés.
+- La saisie et la modification des coefficients.
+- La saisie et la modification des volumes horaires.
+- L'association aux niveaux et séries concernés.
+- La consultation de la configuration d'une classe.
+- La vérification des données manquantes ou incohérentes.
+- L'importation ou l'exportation des données si cela est pertinent.
+
+Lorsque les données se présentent sous forme de tableau, privilégie une modification directe ou un parcours d'édition simple, avec validation claire.
+
+### 9.3. Utilisation dans les autres modules
+
+Ces données doivent servir de référence aux modules qui en ont besoin, notamment :
+
+- Les fiches des classes.
+- Les emplois du temps.
+- La planification annuelle.
+- Le cahier de textes.
+- Le suivi des cours.
+- Les calculs pédagogiques qui seront réellement implémentés.
+- Les éventuels calculs de rémunération fondés sur les volumes horaires.
+
+Ne recopie pas manuellement les mêmes coefficients ou volumes horaires dans plusieurs tables indépendantes sans raison.
+
+Toute modification doit avoir une portée explicite : nouvelles planifications, période future ou données historiques concernées.
+
+Les valeurs utilisées dans un bulletin déjà validé ou un calcul déjà clôturé ne doivent pas changer rétroactivement sans une opération de correction contrôlée.
+
+---
+
+# PARTIE VI — EMPLOI DU TEMPS ET PLANIFICATION ANNUELLE
+
+## 10. Reconcevoir complètement le module des emplois du temps
+
+L'emploi du temps ne doit pas être une simple grille hebdomadaire remplie manuellement.
+
+Il doit s'appuyer sur le calendrier annuel, les classes, les matières, les enseignants, les disponibilités, les volumes horaires configurés et les contraintes de l'établissement.
+
+Il faut distinguer trois niveaux complémentaires.
+
+### 10.1. Niveau 1 : calendrier scolaire annuel
+
+Il détermine les dates et les périodes pendant lesquelles l'établissement fonctionne, enseigne, organise des examens ou ferme ses portes.
+
+Il comprend les périodes pédagogiques, les vacances, les jours fériés, les fermetures et les événements.
+
+### 10.2. Niveau 2 : emploi du temps hebdomadaire récurrent
+
+Il définit l'organisation habituelle des cours :
+
+- Jour de la semaine.
+- Heure de début et de fin.
+- Classe.
+- Matière.
+- Enseignant.
+- Salle, si la gestion des salles existe ou est ajoutée.
+- Toute autre contrainte réellement nécessaire.
+
+Il sert de modèle récurrent pour les jours concernés, mais ne prouve pas qu'un cours a effectivement eu lieu.
+
+### 10.3. Niveau 3 : séances datées
+
+Une séance datée correspond à un cours ou à un événement prévu à une date précise.
+
+Elle peut représenter :
+
+- Un cours normal.
+- Un cours exceptionnel.
+- Un cours déplacé.
+- Un cours annulé.
+- Une séance de remplacement.
+- Une composition ou un examen.
+- Une activité scolaire particulière.
+
+Les séances datées permettent de prendre en compte les exceptions sans détruire la structure de l'emploi du temps hebdomadaire.
+
+### 10.4. Génération automatique
+
+L'administrateur doit pouvoir demander une génération automatique des emplois du temps à partir des données disponibles.
+
+Le générateur doit tenir compte, au minimum, des éléments suivants :
+
+- Les matières affectées à chaque classe.
+- Les volumes horaires configurés.
+- Les disponibilités des enseignants.
+- Les horaires de fonctionnement de l'établissement.
+- Les périodes du calendrier scolaire.
+- Les conflits entre enseignants.
+- Les conflits pour une même classe.
+- Les contraintes de salle, si elles sont gérées.
+- Les autres contraintes explicitement configurées.
+
+La génération doit chercher à satisfaire les contraintes obligatoires et à optimiser les préférences lorsque cela est possible.
+
+Ne prétends pas qu'un emploi du temps est valide si des conflits existent.
+
+Si aucune solution complète n'est trouvée, explique les contraintes qui empêchent la génération et indique les éléments à corriger.
+
+### 10.5. Modification manuelle
+
+Après génération, l'administrateur doit pouvoir modifier l'emploi du temps manuellement.
+
+Toute modification doit être validée contre les conflits et les règles de l'établissement.
+
+Le système doit montrer les conflits avant l'enregistrement et expliquer leur origine.
+
+Une modification d'un modèle hebdomadaire ne doit pas écraser sans contrôle les séances datées qui ont déjà été modifiées, dispensées ou validées.
+
+### 10.6. Horaires de fonctionnement
+
+La configuration des horaires de l'établissement doit être accessible depuis les paramètres du module Emploi du temps.
+
+Évite de créer un module séparé si cela oblige l'utilisateur à chercher ailleurs une configuration directement liée à la planification.
+
+L'administrateur doit pouvoir définir les heures d'ouverture, les créneaux de cours et les contraintes horaires applicables.
+
+Les horaires doivent être configurables plutôt que codés en dur.
+
+### 10.7. Planification sur toute l'année
+
+L'application doit permettre de visualiser et de planifier les activités sur toute l'année scolaire, pas seulement sur une semaine.
+
+L'utilisateur doit pouvoir consulter :
+
+- L'emploi du temps d'une classe.
+- Celui d'un enseignant.
+- Une vue journalière, hebdomadaire ou mensuelle.
+- Le calendrier annuel des cours et événements.
+- Les périodes d'examens et de compositions.
+- Les modifications et annulations.
+- Les séances à venir et les séances déjà réalisées.
+
+### 10.8. Affichage par rôle
+
+Prépare une architecture permettant aux futurs espaces enseignants et parents de consulter les emplois du temps qui les concernent.
+
+Un enseignant ne doit voir que les données auxquelles il est autorisé à accéder.
+
+Un parent doit pouvoir consulter les informations des élèves qui lui sont effectivement rattachés.
+
+Ces interfaces pourront être développées progressivement. La priorité immédiate est la fiabilité des données et des règles de planification.
+
+---
+
+# PARTIE VII — CAHIER DE TEXTES ET RÉALITÉ DES COURS
+
+## 11. Fiabiliser le cahier de textes
+
+Le cahier de textes est une source importante pour le suivi pédagogique et, dans certaines configurations, pour la rémunération des enseignants.
+
+Il faut donc le rendre réellement opérationnel.
+
+Examine les opérations existantes, corrige les erreurs et vérifie le parcours complet de création, consultation, modification et validation.
+
+Le cahier de textes doit être cohérent avec les classes, les matières, les enseignants, l'année scolaire, le calendrier et les séances planifiées.
+
+Il doit permettre de distinguer :
+
+- Une séance planifiée.
+- Une séance effectivement dispensée.
+- Une séance annulée.
+- Une séance reportée.
+- Une séance dont le compte rendu reste à compléter.
+- Une séance validée.
+
+Selon les besoins de l'établissement, les informations d'une séance peuvent comprendre le contenu enseigné, les notions abordées, le travail à faire, les observations et les informations utiles au suivi pédagogique.
+
+Ne considère pas automatiquement chaque séance inscrite dans un emploi du temps comme un cours réellement effectué.
+
+### 11.1. Source de vérité
+
+Définis clairement quelle donnée fait foi pour chaque opération.
+
+Par exemple :
+
+- L'emploi du temps décrit ce qui est prévu.
+- Le cahier de textes et le suivi des séances documentent ce qui a eu lieu, selon les règles de validation adoptées.
+- La paie utilise les séances éligibles et validées selon la politique de rémunération.
+
+Il faut éviter les doubles enregistrements d'un même cours et les incohérences entre les modules.
+
+Toute correction d'une séance déjà utilisée pour calculer une paie doit déclencher un mécanisme de contrôle, et non modifier silencieusement une rémunération déjà validée.
+
+---
+
+# PARTIE VIII — RÉMUNÉRATIONS ET PAIE
+
+## 12. Construire un véritable système de calcul des rémunérations
+
+Le système de rémunération doit être fiable, explicable et traçable.
+
+Il faut distinguer clairement la rémunération du personnel non enseignant, la rémunération des enseignants fondée sur les cours et les primes.
+
+Ne suppose pas que tous les employés sont rémunérés de la même manière.
+
+### 12.1. Personnel non enseignant
+
+Le personnel administratif et les autres employés rémunérés selon un salaire régulier doivent disposer d'un mécanisme adapté à leur mode de rémunération.
+
+La paie ne doit pas dépendre artificiellement du nombre de cours inscrits dans le cahier de textes.
+
+Le montant, la périodicité, les règles de calcul, les éventuelles retenues et les autres éléments nécessaires doivent être définis à partir des paramètres et des règles effectivement retenus par l'établissement.
+
+Ne crée pas arbitrairement des règles légales, fiscales ou sociales qui n'ont pas été spécifiées.
+
+### 12.2. Enseignants rémunérés selon les cours dispensés
+
+Pour les enseignants payés selon les heures ou les cours effectivement dispensés, le calcul doit se baser sur les séances éligibles et validées.
+
+Il doit tenir compte :
+
+- De l'enseignant.
+- De la matière.
+- De la classe.
+- De la date exacte de la séance.
+- De la durée ou du volume rémunérable.
+- Du tarif applicable.
+- De l'année scolaire.
+- Du mois civil concerné.
+- Du statut de la séance.
+- Des règles particulières de rémunération de l'établissement.
+
+Les tarifs horaires ou les modalités de rémunération doivent être configurables par l'établissement.
+
+Ne fixe pas de tarif arbitraire dans le code.
+
+Si les tarifs peuvent varier selon la matière, le contrat, la catégorie de personnel ou la période, représente ces règles explicitement.
+
+### 12.3. Périodes de paie et limites de dates
+
+Les calculs mensuels doivent respecter les dates réelles.
+
+Une période de paie doit pouvoir être définie avec ses dates de début et de fin, son statut et son année scolaire de rattachement lorsque cela est pertinent.
+
+Les mois civils doivent être correctement traités, y compris lorsque l'année scolaire commence ou se termine au milieu d'un mois.
+
+Les séances doivent être affectées à la bonne période selon leur date réelle et les règles définies.
+
+Le système doit éviter :
+
+- Les doubles paiements.
+- Les séances comptées deux fois.
+- Les séances affectées au mauvais mois.
+- Les cours annulés comptabilisés comme effectués sans règle explicite.
+- Les calculs fondés sur une estimation imprécise du nombre de semaines.
+- Les modifications rétroactives silencieuses.
+- Les confusions entre date de cours, période de paie et date de paiement.
+
+### 12.4. Calendrier scolaire et rémunération
+
+Le calendrier scolaire doit influencer les calculs lorsqu'une règle de rémunération l'exige.
+
+L'application doit pouvoir tenir compte des vacances, des jours fériés, des fermetures et des périodes sans cours.
+
+Cependant, il ne faut pas appliquer une règle universelle selon laquelle toute journée sans cours entraîne nécessairement une absence de rémunération.
+
+Les règles dépendent du type de rémunération, des engagements de l'établissement et des modalités retenues.
+
+Pour les enseignants payés selon les cours réellement dispensés, seules les séances répondant aux critères de rémunération configurés doivent être comptabilisées.
+
+Pour les employés à salaire régulier, les périodes de vacances ou les fermetures ne doivent pas supprimer automatiquement le salaire contractuellement dû.
+
+Les règles doivent être explicites et configurables.
+
+### 12.5. Examens, compositions et devoirs
+
+Le calendrier doit identifier les périodes d'examens, de compositions et les autres activités pédagogiques particulières.
+
+L'établissement doit pouvoir définir comment ces périodes affectent la rémunération.
+
+Par exemple, selon la politique choisie, il peut décider :
+
+- De maintenir le calcul normal des cours réguliers.
+- De compter certaines séances d'examen comme des séances rémunérables.
+- D'exclure certaines séances du calcul normal.
+- D'appliquer une rémunération exceptionnelle distincte.
+- D'attribuer une prime spécifique.
+
+Ces exemples illustrent les possibilités de configuration, ils ne constituent pas des règles prédéfinies.
+
+**Le système ne doit pas décider seul qu'une période d'examen est rémunérée ou non.**
+
+La règle doit pouvoir être configurée à l'avance, puis examinée et ajustée lors de la préparation de la paie, selon les autorisations de l'utilisateur.
+
+Tout ajustement doit être visible et justifié.
+
+### 12.6. Calcul progressif et contrôle humain
+
+La paie doit pouvoir être consultée progressivement au cours du mois.
+
+L'administrateur doit pouvoir examiner les séances comptabilisées, les heures, les tarifs, les absences, les annulations et les éventuelles corrections avant de valider les montants.
+
+Le parcours doit distinguer :
+
+1. Le calcul prévisionnel.
+2. La vérification des éléments.
+3. Les corrections autorisées.
+4. La validation de la paie.
+5. L'enregistrement du paiement.
+6. La traçabilité de l'opération.
+
+Avant validation, l'utilisateur doit pouvoir comprendre précisément comment le montant a été calculé.
+
+Une fois la paie validée, toute modification doit passer par un mécanisme contrôlé de correction ou de régularisation.
+
+Ne modifie pas rétroactivement une paie validée simplement parce qu'une donnée source a changé.
+
+### 12.7. Primes et compléments
+
+Les primes doivent être distinctes du calcul normal des cours et du salaire régulier.
+
+Prévois un mécanisme permettant d'attribuer une prime à un employé ou à un enseignant, avec les informations nécessaires :
+
+- Le bénéficiaire.
+- Le montant.
+- La date ou la période concernée.
+- Le motif.
+- Le type de prime.
+- Le statut de validation.
+- L'utilisateur ayant effectué l'opération.
+- Le lien avec la paie concernée.
+
+Les types de primes doivent être configurables.
+
+Les primes validées doivent être ajoutées au montant à payer selon les règles choisies, sans être comptées deux fois.
+
+### 12.8. Détail et justificatifs
+
+Chaque paie doit disposer d'un détail vérifiable.
+
+L'utilisateur doit pouvoir consulter les éléments qui composent le montant final et obtenir un récapitulatif exploitable.
+
+Selon les besoins du projet, prévois les états de paie, les justificatifs et les exports appropriés.
+
+Les totaux affichés dans les tableaux doivent correspondre aux calculs détaillés et aux paiements effectivement enregistrés.
+
+---
+
+# PARTIE IX — COMPTABILITÉ GÉNÉRALE
+
+## 13. Développer une véritable comptabilité
+
+Le module financier actuel semble manquer de cohérence et ne doit pas être conservé simplement en changeant son apparence.
+
+Il faut concevoir une **comptabilité structurée**, avec des opérations traçables et des états vérifiables.
+
+Il ne s'agit pas uniquement d'afficher des recettes et des dépenses dans deux listes.
+
+L'architecture doit être capable de représenter les opérations comptables nécessaires au fonctionnement de l'établissement.
+
+### 13.1. Distinguer les concepts
+
+Distingue clairement :
+
+- La création d'une opération métier.
+- La validation de cette opération.
+- La génération d'une écriture comptable.
+- Le paiement ou l'encaissement.
+- Le rapprochement bancaire.
+- La clôture d'une période comptable.
+
+Ces étapes peuvent être liées, mais ne doivent pas être confondues.
+
+Une dépense enregistrée n'est pas nécessairement déjà payée. Une somme due n'est pas nécessairement encaissée. Une paie calculée n'est pas nécessairement payée.
+
+### 13.2. Structure comptable
+
+Prévois, selon le référentiel comptable applicable et les besoins de l'établissement :
+
+- Un plan de comptes.
+- Des journaux comptables.
+- Des exercices et périodes comptables.
+- Des écritures comptables.
+- Des lignes d'écriture.
+- Des comptes de tiers lorsque nécessaire.
+- Des pièces justificatives.
+- Des références de transaction.
+- Des rapprochements entre opérations métier et écritures.
+- Des mécanismes de validation et de clôture.
+- Une piste d'audit.
+
+Les comptes, journaux et paramètres comptables doivent être configurables dans les limites du référentiel retenu.
+
+Ne choisis pas arbitrairement un plan de comptes présenté comme officiellement conforme sans avoir identifié le référentiel réellement applicable à l'établissement.
+
+La structure doit pouvoir être adaptée à ce référentiel et aux obligations locales.
+
+### 13.3. Écritures et équilibre
+
+Si la comptabilité retenue repose sur la partie double, chaque écriture validée doit être équilibrée entre débit et crédit.
+
+Le système doit interdire la validation d'écritures déséquilibrées.
+
+Il doit également contrôler les dates, les comptes utilisés, les périodes ouvertes et les références nécessaires.
+
+Une écriture validée ne doit pas pouvoir être modifiée librement sans trace. Les corrections doivent passer par des opérations contrôlées, conformément aux règles retenues.
+
+### 13.4. Recettes, dépenses et trésorerie
+
+Le système doit permettre de suivre les opérations financières pertinentes de l'établissement :
+
+- Encaissements.
+- Décaissements.
+- Dépenses.
+- Créances.
+- Dettes.
+- Règlements.
+- Comptes de trésorerie.
+- Caisses et comptes bancaires.
+- Pièces justificatives.
+- Rapprochements bancaires, si les informations nécessaires sont disponibles.
+
+Une opération peut être créée avant son paiement, puis rapprochée du règlement correspondant.
+
+Les remboursements, annulations, impayés et régularisations doivent être traités explicitement.
+
+Évite de représenter artificiellement une opération non payée comme un mouvement de trésorerie déjà réalisé.
+
+### 13.5. États comptables
+
+Prévois les états utiles au contrôle et au suivi, selon le périmètre comptable retenu :
+
+- Journal.
+- Grand livre.
+- Balance des comptes.
+- Situation des comptes de tiers.
+- Suivi des recettes et des dépenses.
+- Situation de trésorerie.
+- États de rapprochement.
+- États financiers adaptés au référentiel applicable.
+
+Les rapports doivent être fondés sur les données enregistrées et validées, avec des filtres par période et les autres dimensions utiles.
+
+Les chiffres des rapports doivent être réconciliables avec les écritures sources.
+
+### 13.6. Périodes comptables et clôture
+
+La période comptable ne doit pas être confondue avec l'année scolaire.
+
+Une année scolaire peut chevaucher deux exercices comptables.
+
+Le système doit gérer séparément ces notions et permettre de les relier lorsqu'une opération le nécessite.
+
+La clôture d'une période doit empêcher les modifications non autorisées et prévoir une procédure de correction adaptée.
+
+La clôture de l'année scolaire ne doit pas entraîner automatiquement la clôture comptable si les périodes ne correspondent pas.
+
+### 13.7. Contrôle et audit
+
+Pour les opérations importantes, conserve les informations nécessaires pour comprendre :
+
+- Qui a créé l'opération.
+- Qui l'a modifiée.
+- Qui l'a validée.
+- Quand chaque action a eu lieu.
+- Quel était le montant avant et après une correction.
+- Quel document justifie l'opération.
+- Quelle écriture comptable lui correspond.
+- Si l'opération a été annulée ou régularisée.
+
+Les journaux d'audit doivent être protégés contre les modifications ordinaires.
+
+Les permissions doivent distinguer les personnes qui saisissent, contrôlent, valident et clôturent les opérations lorsque l'organisation de l'établissement le justifie.
+
+### 13.8. Centres d'activité et modules spécialisés
+
+L'établissement peut avoir plusieurs activités : scolarité, cantine, bibliothèque, infirmerie et autres services.
+
+La comptabilité doit pouvoir distinguer ces activités à l'aide de catégories, de centres de coûts ou d'axes analytiques si cela est pertinent.
+
+**Ne crée pas automatiquement un compte bancaire séparé pour chaque activité.** Les axes analytiques servent à analyser les activités sans imposer artificiellement une séparation de trésorerie.
+
+Les données des modules spécialisés doivent être reliées à la comptabilité selon des règles explicites.
+
+---
+
+# PARTIE X — FRAIS SCOLAIRES ET CONTRIBUTIONS
+
+## 14. Séparer la gestion des frais de la comptabilité
+
+Les frais scolaires et les contributions ne doivent pas être confondus avec le module de comptabilité générale.
+
+La gestion des frais scolaires est un module métier qui enregistre ce que chaque élève doit, ce qu'il a payé, ce qui reste dû et les éventuelles remises ou régularisations.
+
+La comptabilité générale enregistre les conséquences comptables des opérations selon les règles retenues.
+
+Les deux modules doivent être reliés sans dupliquer artificiellement les opérations.
+
+### 14.1. Gestion des frais
+
+Prévois une structure adaptée pour :
+
+- Les types de frais et contributions.
+- Les règles d'application par année scolaire.
+- Les montants configurés par l'établissement.
+- Les échéances.
+- Les sommes dues.
+- Les paiements partiels.
+- Les soldes restants.
+- Les remises ou exonérations autorisées.
+- Les remboursements et corrections.
+- Les justificatifs.
+- L'historique des opérations.
+
+Ne présume pas que tous les élèves paient les mêmes montants ni que toutes les contributions suivent le même calendrier.
+
+Les règles doivent être configurables.
+
+### 14.2. Parcours de paiement
+
+Lorsqu'un paiement est enregistré, l'utilisateur doit pouvoir identifier clairement :
+
+- L'élève concerné.
+- L'année scolaire concernée.
+- Les frais auxquels le paiement est affecté.
+- Le montant reçu.
+- Le mode de paiement.
+- La date.
+- La référence ou le reçu.
+- Le solde restant.
+
+Le système doit empêcher les doubles enregistrements accidentels et conserver les justificatifs.
+
+Les corrections, remboursements et annulations doivent laisser une trace.
+
+### 14.3. Intégration comptable
+
+La génération des écritures doit suivre des règles explicites et être liée aux opérations validées.
+
+Un paiement de frais scolaires ne doit pas être comptabilisé plusieurs fois simplement parce qu'il apparaît dans plusieurs écrans.
+
+Les rapports de frais scolaires et les états comptables peuvent présenter des perspectives différentes, mais leurs écarts doivent pouvoir être expliqués.
+
+### 14.4. Vérification fonctionnelle
+
+Le module des frais scolaires semble comporter des actions défaillantes.
+
+Teste l'ensemble du parcours, de la configuration des frais à l'enregistrement d'un paiement, puis à la consultation du solde et à la génération éventuelle des écritures correspondantes.
+
+Ne te limite pas à corriger les erreurs visibles dans l'interface.
+
+---
+
+# PARTIE XI — CANTINE, BIBLIOTHÈQUE ET INFIRMERIE
+
+## 15. Modules spécialisés
+
+Les modules de cantine, de bibliothèque et d'infirmerie doivent être conçus en fonction de leur utilité réelle.
+
+Ils ne doivent pas être de simples pages affichant des chiffres ou des formulaires sans workflow complet.
+
+### 15.1. Cantine
+
+Analyse les fonctionnalités existantes et identifie les opérations nécessaires au fonctionnement réel du service.
+
+Selon le périmètre retenu, cela peut inclure la gestion des prestations, des inscriptions, des paiements, des consommations, des dépenses et des recettes.
+
+Les opérations ayant un impact financier doivent pouvoir être reliées à la comptabilité.
+
+Ne développe pas toutes ces fonctionnalités à l'aveugle si elles ne correspondent pas au besoin réel de l'établissement : identifie le périmètre utile à partir du projet existant.
+
+### 15.2. Bibliothèque
+
+Examine les besoins de suivi des ouvrages, des prêts, des retours et des utilisateurs, si ces fonctionnalités font partie du périmètre de l'application.
+
+Prévois des statuts explicites et des règles empêchant les incohérences dans les prêts et les retours.
+
+Les éventuelles pénalités ou transactions financières doivent suivre des règles configurables et être intégrées correctement au système financier lorsqu'elles existent.
+
+### 15.3. Infirmerie
+
+L'infirmerie doit permettre de suivre les opérations nécessaires à son activité.
+
+Les dépenses et recettes éventuelles doivent être enregistrées de façon cohérente.
+
+Les informations personnelles et médicales éventuelles sont sensibles : leur accès doit être limité aux utilisateurs autorisés et leur traitement doit respecter les exigences de confidentialité applicables.
+
+Ne donne pas un accès général aux informations médicales à tous les profils administratifs.
+
+### 15.4. Vision financière des activités
+
+Lorsque c'est utile, les responsables doivent pouvoir consulter les recettes, dépenses et indicateurs de leur activité.
+
+Ces rapports doivent être cohérents avec la comptabilité générale, sans compter plusieurs fois les mêmes opérations.
+
+---
+
+# PARTIE XII — FONCTIONNALITÉS À SUPPRIMER OU À RECONSIDÉRER
+
+## 16. Messagerie et transport
+
+Les modules de messagerie et de transport ne font pas partie du périmètre souhaité à ce stade.
+
+Examine leur présence dans l'interface et leur dépendance éventuelle avec le reste de l'application.
+
+Retire-les de la navigation et du périmètre fonctionnel actif si leur suppression est confirmée par l'architecture existante.
+
+Ne supprime pas brutalement les tables ou les données associées sans vérifier les dépendances, les migrations et les risques de perte d'informations.
+
+L'objectif est de simplifier le produit et de concentrer les efforts sur les fonctions scolaires, administratives et financières prioritaires.
+
+---
+
+# PARTIE XIII — DOCUMENTS, DONNÉES ET SÉCURITÉ
+
+## 17. Gestion documentaire
+
+Le module documentaire existant semble présenter une base intéressante.
+
+Conserve les fonctionnalités qui fonctionnent correctement et améliore celles qui sont nécessaires.
+
+Vérifie notamment :
+
+- L'organisation des documents.
+- Leur rattachement à l'élève, au personnel, à l'année scolaire ou à l'opération concernée.
+- Les formats autorisés.
+- La validation des fichiers.
+- Les droits d'accès.
+- La consultation et le téléchargement.
+- La recherche.
+- L'historique des modifications.
+- Les risques d'accès à des documents non autorisés.
+
+Les documents justificatifs des opérations financières et de paie doivent pouvoir être retrouvés facilement.
+
+## 18. Sécurité et permissions
+
+Revois le modèle de rôles et de permissions.
+
+Il faut éviter de protéger uniquement les boutons dans l'interface. Les autorisations doivent également être vérifiées dans les traitements backend concernés.
+
+Selon les rôles définis, l'accès doit être contrôlé aux données et opérations suivantes :
+
+- Élèves et inscriptions.
+- Personnel et rémunérations.
+- Validation des paies.
+- Paiements et frais scolaires.
+- Comptabilité.
+- Documents sensibles.
+- Configuration des données de référence.
+- Clôtures et corrections.
+
+Prévois une séparation des responsabilités lorsque cela est pertinent.
+
+Les informations sensibles ne doivent pas être exposées dans des exports, des journaux ou des réponses API sans justification.
+
+## 19. Intégrité et historique des données
+
+Les données doivent rester cohérentes entre les modules.
+
+Utilise des contraintes de base de données adaptées, des transactions lorsque plusieurs écritures doivent être atomiques, et des validations métier explicites.
+
+Évite les suppressions physiques de données historiques lorsqu'une désactivation ou une annulation contrôlée est plus appropriée.
+
+Les opérations validées doivent conserver leur historique.
+
+Les modifications importantes doivent pouvoir être retracées.
+
+Prévois les migrations de base de données nécessaires et vérifie leur compatibilité avec les données existantes.
+
+Ne réinitialise pas la base de données pour simplifier ton développement.
+
+---
+
+# PARTIE XIV — ARCHITECTURE ET RELATIONS ENTRE LES MODULES
+
+## 20. Construire un système cohérent
+
+Les modules ne doivent pas fonctionner comme des applications indépendantes qui enregistrent chacune leurs propres versions des mêmes informations.
+
+Ils doivent partager des référentiels communs et respecter des règles métier définies.
+
+La chaîne de dépendances doit notamment suivre cette logique :
+
+**Année scolaire et calendrier → paramètres pédagogiques → classes et affectations → emploi du temps → séances planifiées → séances réellement dispensées et validées → calcul des rémunérations éligibles → validation de la paie → paiement → écritures comptables et rapprochements.**
+
+Une autre chaîne importante est :
+
+**Année scolaire → inscription de l'élève → frais scolaires applicables → créance ou montant dû → paiement → reçu et solde → écritures comptables correspondantes.**
+
+Ces chaînes sont des principes d'organisation. Il faut les adapter au modèle de données existant et au référentiel comptable retenu.
+
+### 20.1. Référentiels partagés
+
+Évite de créer plusieurs versions indépendantes des mêmes entités lorsqu'un référentiel commun est nécessaire.
+
+Les classes, enseignants, élèves, matières, années scolaires, périodes et opérations financières doivent être identifiables sans ambiguïté.
+
+### 20.2. Historique et versionnement
+
+Les changements de paramètres doivent respecter les périodes auxquelles ils s'appliquent.
+
+Par exemple, modifier le tarif horaire d'un enseignant pour une période future ne doit pas recalculer automatiquement toutes ses paies historiques.
+
+Modifier le coefficient d'une matière ne doit pas changer silencieusement les résultats déjà validés.
+
+Modifier un emploi du temps ne doit pas effacer les séances effectivement réalisées.
+
+### 20.3. Automatisation maîtrisée
+
+Les automatismes doivent être explicites, documentés et contrôlables.
+
+L'utilisateur doit comprendre :
+
+- Quelle donnée déclenche le traitement.
+- Quelle règle est appliquée.
+- Quel résultat est produit.
+- Quelles opérations nécessitent une validation humaine.
+- Comment corriger une erreur.
+
+Les calculs importants doivent être centralisés dans une logique métier fiable plutôt que reproduits différemment dans plusieurs écrans.
+
+### 20.4. Préparation des espaces enseignants et parents
+
+L'architecture doit permettre l'ajout progressif de vues destinées aux enseignants et aux parents.
+
+Cependant, la priorité est de stabiliser les données, les permissions et les workflows administratifs.
+
+Il ne faut pas disperser le travail en développant immédiatement toutes les interfaces secondaires alors que les fonctionnalités fondamentales restent défaillantes.
+
+---
+
+# PARTIE XV — MÉTHODE DE TRAVAIL ET ORDRE DE PRIORITÉ
+
+## 21. Procéder par phases
+
+Ne modifie pas tous les modules simultanément sans stratégie.
+
+Organise le travail en phases cohérentes.
+
+### Phase 1 — Audit et diagnostic
+
+- Comprendre le code et la base de données.
+- Cartographier les modules.
+- Identifier les erreurs et les dépendances.
+- Distinguer les fonctions opérationnelles des fonctions incomplètes.
+- Établir un plan d'intervention.
+
+### Phase 2 — Socle de données et année scolaire
+
+- Corriger les modèles de données fondamentaux.
+- Structurer les années scolaires.
+- Gérer le calendrier annuel et les périodes.
+- Sécuriser l'historique des inscriptions et des classes.
+- Définir les référentiels partagés.
+
+Cette phase est prioritaire, car de nombreux autres modules dépendent de ces éléments.
+
+### Phase 3 — Pédagogie et emplois du temps
+
+- Structurer les matières, coefficients et volumes horaires.
+- Prévoir leur saisie manuelle par l'administration.
+- Corriger les classes et les affectations.
+- Mettre en place la planification annuelle.
+- Fiabiliser la génération et la modification des emplois du temps.
+- Corriger le cahier de textes et le suivi des séances.
+
+### Phase 4 — Élèves et gestion administrative
+
+- Revoir les listes d'élèves par année scolaire.
+- Fiabiliser les inscriptions et réinscriptions.
+- Améliorer les recherches et les filtres.
+- Corriger les imports Excel.
+- Préserver l'historique et préparer l'archivage.
+
+### Phase 5 — Rémunérations et paie
+
+- Distinguer les modes de rémunération.
+- Définir les règles d'éligibilité des séances.
+- Utiliser les dates réelles et le calendrier.
+- Gérer les primes.
+- Permettre le contrôle et la validation.
+- Assurer la traçabilité des paiements.
+
+### Phase 6 — Frais scolaires et comptabilité
+
+- Fiabiliser les frais scolaires.
+- Séparer les montants dus, les encaissements et les écritures.
+- Construire le modèle comptable.
+- Gérer les journaux et les périodes.
+- Mettre en place les contrôles et les états.
+- Relier correctement la paie, les frais et les activités spécialisées.
+
+### Phase 7 — Modules spécialisés et documents
+
+- Revoir la cantine, la bibliothèque et l'infirmerie.
+- Améliorer les documents et les permissions.
+- Simplifier la navigation.
+- Retirer ou masquer les modules hors périmètre.
+
+### Phase 8 — Harmonisation finale et tests
+
+- Revoir le tableau de bord.
+- Harmoniser les composants.
+- Corriger les problèmes responsive.
+- Tester tous les parcours.
+- Vérifier les permissions.
+- Vérifier les calculs et les rapports.
+- Documenter les limites et les décisions importantes.
+
+Cet ordre est indicatif : si l'audit révèle un problème bloquant, adapte les priorités en expliquant pourquoi.
+
+---
+
+# PARTIE XVI — TESTS OBLIGATOIRES
+
+## 22. Tester les parcours complets
+
+Ne te limite pas à vérifier que chaque page s'ouvre.
+
+Teste les opérations de bout en bout et vérifie que les données restent cohérentes entre les modules.
+
+### 22.1. Année scolaire
+
+- Créer une année scolaire avec des dates configurables.
+- Gérer une année qui traverse deux années civiles.
+- Définir plusieurs périodes pédagogiques.
+- Ajouter des vacances, jours fériés, fermetures et examens.
+- Modifier le calendrier et vérifier les conséquences.
+- Clôturer une année tout en conservant son historique.
+- Préparer une nouvelle année sans écraser l'ancienne.
+
+### 22.2. Élèves et classes
+
+- Créer un élève.
+- L'inscrire dans une classe pour une année scolaire.
+- Le réinscrire l'année suivante.
+- Consulter ses années antérieures.
+- Modifier sa classe sans perdre l'historique.
+- Importer des élèves depuis Excel.
+- Tester les doublons, les erreurs de format et les données incomplètes.
+- Vérifier que la liste par défaut n'affiche que les inscriptions de l'année active.
+
+### 22.3. Paramètres pédagogiques et emplois du temps
+
+- Créer des matières sans valeurs pédagogiques préremplies.
+- Renseigner manuellement les coefficients et volumes horaires.
+- Vérifier leur utilisation dans la planification.
+- Générer un emploi du temps.
+- Détecter un conflit d'enseignant.
+- Détecter un conflit de classe.
+- Vérifier l'effet des disponibilités.
+- Déplacer une séance.
+- Annuler une séance.
+- Ajouter une séance exceptionnelle.
+- Tester les périodes d'examen et les vacances.
+
+### 22.4. Cahier de textes et rémunérations
+
+- Planifier un cours sans le marquer comme effectué.
+- Enregistrer une séance réellement dispensée.
+- Annuler ou reporter une séance.
+- Vérifier les règles de validation.
+- Calculer une paie mensuelle.
+- Vérifier les limites exactes des mois civils.
+- Tester un mois partiel au début ou à la fin de l'année scolaire.
+- Vérifier le traitement des vacances et des examens.
+- Modifier une règle de rémunération et contrôler sa portée temporelle.
+- Ajouter une prime.
+- Valider une paie.
+- Enregistrer le paiement.
+- Vérifier qu'une paie validée n'est pas recalculée silencieusement.
+
+### 22.5. Frais scolaires et comptabilité
+
+- Configurer des frais.
+- Enregistrer un paiement partiel.
+- Calculer le solde restant.
+- Enregistrer plusieurs paiements.
+- Tester un remboursement ou une correction.
+- Vérifier l'absence de doublons.
+- Générer les écritures comptables correspondantes.
+- Vérifier l'équilibre des écritures lorsque la partie double est utilisée.
+- Consulter le journal, le grand livre et la balance.
+- Vérifier la cohérence entre les paiements, les soldes et les écritures.
+- Tester une période clôturée.
+- Vérifier la piste d'audit.
+
+### 22.6. Tests techniques et sécurité
+
+- Tester les formulaires et validations.
+- Tester les permissions par rôle.
+- Vérifier les erreurs serveur et les retours API.
+- Tester les migrations de base de données.
+- Vérifier les transactions et les opérations simultanées lorsque c'est pertinent.
+- Contrôler les doublons et les contraintes d'intégrité.
+- Vérifier les états de chargement, de succès et d'erreur.
+- Tester les principales tailles d'écran.
+- Vérifier que les données sensibles ne sont pas accessibles aux utilisateurs non autorisés.
+
+Lorsque des tests automatisés sont possibles, ajoute-les pour les calculs et les règles métier critiques.
+
+---
+
+# PARTIE XVII — CRITÈRES DE QUALITÉ ET DE LIVRAISON
+
+## 23. Ce qui est attendu à la fin
+
+Le résultat doit être une application réellement améliorée, et pas seulement une maquette visuelle.
+
+Les critères de réussite sont les suivants :
+
+- Une interface professionnelle et cohérente.
+- Une navigation compréhensible.
+- Des modules dont le périmètre est clair.
+- Des données correctement structurées.
+- Une année scolaire centrale et configurable.
+- Un calendrier annuel exploitable.
+- Des matières, coefficients et volumes horaires configurables manuellement.
+- Une génération d'emploi du temps tenant compte des contraintes.
+- Un cahier de textes fonctionnel.
+- Une gestion correcte des élèves sur plusieurs années.
+- Des calculs de rémunération explicables et traçables.
+- Une distinction claire entre salaires réguliers, rémunérations de cours et primes.
+- Une gestion fonctionnelle des frais scolaires.
+- Une comptabilité structurée et vérifiable.
+- Une intégration cohérente des opérations financières.
+- Des historiques préservés.
+- Des permissions adaptées.
+- Des erreurs et des états correctement gérés.
+- Des tests couvrant les parcours importants.
+- Une architecture suffisamment maintenable pour les évolutions futures.
+
+### Livrables attendus
+
+À l'issue du travail, fournis :
+
+1. Un résumé de l'architecture existante et des principaux problèmes identifiés.
+2. Une liste des améliorations effectivement réalisées.
+3. Une description des changements de structure de données et des migrations.
+4. Une explication des workflows importants.
+5. Les tests exécutés et leurs résultats réels.
+6. Les problèmes qui restent à résoudre.
+7. Les paramètres que l'administrateur doit renseigner manuellement.
+8. Les décisions métier qui nécessitent encore une validation.
+9. Les éventuelles limites techniques ou fonctionnelles.
+
+Ne déclare pas qu'un module est terminé si ses opérations principales ne sont pas testées.
+
+Ne déclare pas qu'un test a réussi s'il n'a pas réellement été exécuté.
+
+---
+
+# CONSIGNES FINALES
+
+## 24. Façon de travailler
+
+Tu disposes d'une grande liberté pour améliorer l'architecture et l'interface, mais cette liberté ne doit pas conduire à inventer des règles métier qui relèvent de l'établissement.
+
+Respecte les consignes suivantes :
+
+**1. N'invente aucune donnée de référence pédagogique.** Les coefficients, volumes horaires, tarifs et associations pédagogiques doivent pouvoir être renseignés par l'administrateur.
+
+**2. Ne code pas en dur les dates de l'année scolaire.** Le calendrier doit être configurable et servir de référence aux autres modules.
+
+**3. Ne confonds pas année scolaire, année civile, mois de paie et période comptable.**
+
+**4. Ne confonds pas emploi du temps prévu et cours réellement dispensé.**
+
+**5. Ne confonds pas opération métier, validation, écriture comptable et paiement.**
+
+**6. Ne supprime pas l'historique pour simplifier les traitements.**
+
+**7. Ne fais pas de changements rétroactifs silencieux sur les données validées.**
+
+**8. Ne développe pas uniquement le frontend.** Les actions doivent fonctionner jusqu'à la couche de persistance, avec des contrôles backend appropriés.
+
+**9. Ne refais pas tout à zéro sans justification.** Réutilise les éléments existants qui sont solides, corrige ceux qui sont défaillants et restructure ceux qui sont incohérents.
+
+**10. Ne privilégie pas l'esthétique au détriment de la fiabilité.** Une interface élégante qui calcule mal les rémunérations ou perd l'historique des élèves n'est pas une application professionnelle.
+
+**11. Ne multiplie pas les modules et les écrans sans raison.** Chaque élément doit servir un workflow identifiable.
+
+**12. N'utilise pas de fausses données de démonstration pour masquer des fonctionnalités manquantes.**
+
+**13. Ne considère pas qu'un bouton fonctionne simplement parce qu'il est cliquable.** Vérifie l'opération complète et son résultat.
+
+**14. Préserve les données existantes et effectue les migrations avec prudence.** Prévois des sauvegardes lorsque l'environnement le permet.
+
+**15. Rends les calculs explicables.** Pour les rémunérations et la comptabilité, l'utilisateur doit pouvoir retrouver les éléments ayant produit un montant.
+
+## 25. Première action à entreprendre
+
+Commence par examiner le projet existant et identifier les composants, les données et les modules concernés.
+
+Établis ensuite un plan d'exécution priorisé en identifiant les dépendances et les risques.
+
+Après ce diagnostic, passe à la mise en œuvre effective, étape par étape. Ne t'arrête pas à une proposition de design, à une liste de recommandations ou à un rapport théorique.
+
+À chaque étape importante :
+
+- Implémente les changements nécessaires.
+- Vérifie leur intégration avec le reste de l'application.
+- Exécute les tests adaptés.
+- Corrige les régressions.
+- Préserve l'historique et la cohérence des données.
+- Documente les décisions métier qui influencent les résultats.
+
+**L'objectif final est de disposer d'un véritable système de gestion scolaire professionnel, dont les modules partagent des données cohérentes, dont les automatisations reposent sur des règles explicites et dont les opérations administratives, pédagogiques et financières peuvent être contrôlées et justifiées.**

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Réinscription — {{ eleve }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'eleves:detail' eleve.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h1 class="page-title mb-0">Réinscription annuelle de l'élève</h1>
+            </div>
+            <p class="text-muted mb-0 mt-1">
+                Élève : <strong>{{ eleve.nom }} {{ eleve.prenoms }}</strong> (Matricule : <code>{{ eleve.matricule }}</code>) · 
+                Année active : <strong>{{ annee_courante }}</strong>
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'eleves:detail' eleve.pk %}" class="btn btn-outline-secondary">
+                Annuler
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0 fw-semibold text-dark">
+                        <i class="bi bi-person-check text-primary me-2"></i>Affectation de rentrée et scolarité
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-info py-2 small mb-4">
+                        <i class="bi bi-info-circle me-1"></i>
+                        La validation de cette réinscription rattachera l'élève à sa nouvelle classe pour l'année <strong>{{ annee_courante }}</strong> et générera automatiquement son échéancier de frais de scolarité pour le comptable.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Classe d'inscription (*)</label>
+                            {{ form.classe }}
+                            {% if form.classe.errors %}<div class="text-danger small">{{ form.classe.errors }}</div>{% endif %}
+                            <div class="form-text small">Sélectionnez la classe dans laquelle l'élève est promu(e) ou maintenu(e).</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Statut d'inscription</label>
+                            {{ form.statut_inscription }}
+                            {% if form.statut_inscription.errors %}<div class="text-danger small">{{ form.statut_inscription.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                                <i class="bi bi-check2-circle me-1"></i>Valider la réinscription
+                            </button>
+                            <a href="{% url 'eleves:detail' eleve.pk %}" class="btn btn-outline-secondary">
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

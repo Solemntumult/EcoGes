@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Gestion des Classes — {{ annee.libelle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1 fw-bold text-dark">Classes & Groupes Pédagogiques</h1>
+            <p class="text-muted small mb-0">
+                Année scolaire : <span class="badge bg-dark font-monospace text-white">{{ annee.libelle }}</span>
+                {% if annee.est_courante %}<span class="badge bg-success ms-1">Active</span>{% endif %}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <!-- Sélecteur d'année scolaire -->
+            <form method="get" class="d-inline-flex align-items-center gap-1">
+                {% if cycle_filtre %}<input type="hidden" name="cycle" value="{{ cycle_filtre }}">{% endif %}
+                <label for="annee-select" class="small text-muted me-1 mb-0">Année :</label>
+                <select id="annee-select" name="annee" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for a in annees %}
+                    <option value="{{ a.id }}" {% if a.id == annee.id %}selected{% endif %}>
+                        {{ a.libelle }} {% if a.est_courante %}(en cours){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{% url 'parametrage:classe_creer' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Nouvelle classe
+            </a>
+        </div>
+    </div>
+
+    <!-- Métriques Synthétiques -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3">
+            <div class="card border p-3 h-100">
+                <div class="small text-muted text-uppercase fw-semibold">Total Classes</div>
+                <div class="h3 fw-bold text-dark mb-0 mt-1">{{ total_classes }}</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card border p-3 h-100">
+                <div class="small text-muted text-uppercase fw-semibold">Élèves Inscrits</div>
+                <div class="h3 fw-bold text-primary mb-0 mt-1">{{ total_eleves }}</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card border p-3 h-100">
+                <div class="small text-muted text-uppercase fw-semibold">1er Cycle (Collège)</div>
+                <div class="h3 fw-bold text-secondary mb-0 mt-1">{{ classes_premier_cycle|length }}</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card border p-3 h-100">
+                <div class="small text-muted text-uppercase fw-semibold">2nd Cycle (Lycée)</div>
+                <div class="h3 fw-bold text-secondary mb-0 mt-1">{{ classes_second_cycle|length }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres par Cycle -->
+    <div class="d-flex gap-2 mb-3">
+        <a href="?{% if annee %}annee={{ annee.id }}{% endif %}"
+           class="btn btn-sm {% if not cycle_filtre %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            Toutes les classes ({{ total_classes }})
+        </a>
+        <a href="?cycle=PREMIER_CYCLE{% if annee %}&annee={{ annee.id }}{% endif %}"
+           class="btn btn-sm {% if cycle_filtre == 'PREMIER_CYCLE' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            1er Cycle — 6e, 5e, 4e, 3e ({{ classes_premier_cycle|length }})
+        </a>
+        <a href="?cycle=SECOND_CYCLE{% if annee %}&annee={{ annee.id }}{% endif %}"
+           class="btn btn-sm {% if cycle_filtre == 'SECOND_CYCLE' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            2nd Cycle — 2nde, 1ère, Tle ({{ classes_second_cycle|length }})
+        </a>
+    </div>
+
+    <!-- Tableau des Classes -->
+    <div class="card border shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Cycle & Niveau</th>
+                            <th>Série</th>
+                            <th>Dénomination</th>
+                            <th>Professeur Principal (PP)</th>
+                            <th class="text-center">Effectif</th>
+                            <th class="text-end pe-3">Actions pédagogiques & administratives</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in classes %}
+                        <tr>
+                            <td class="ps-3">
+                                <span class="badge {% if c.niveau.cycle == 'PREMIER_CYCLE' %}bg-secondary{% else %}bg-dark{% endif %} me-1">
+                                    {{ c.niveau.get_cycle_display }}
+                                </span>
+                                <strong class="text-dark">{{ c.niveau.libelle }}</strong>
+                            </td>
+                            <td>
+                                {% if c.niveau.serie %}
+                                <span class="badge bg-light text-dark border font-monospace">Série {{ c.niveau.serie.code }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong class="fs-6 text-dark">{{ c.libelle }}</strong>
+                            </td>
+                            <td>
+                                {% if c.enseignant_principal %}
+                                <span class="text-dark fw-medium">
+                                    <i class="bi bi-person-badge me-1 text-primary"></i>
+                                    {{ c.enseignant_principal.nom }} {{ c.enseignant_principal.prenoms }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-light text-muted border">Non assigné</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge {% if c.effectif_actuel >= c.effectif_max %}bg-danger{% else %}bg-light text-dark border{% endif %} font-monospace">
+                                    {{ c.effectif_actuel }} / {{ c.effectif_max }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'parametrage:classe_matieres' c.pk %}"
+                                       class="btn btn-outline-primary"
+                                       title="Configurer les matières, coefficients et quotas horaires">
+                                        <i class="bi bi-book me-1"></i>Matières & Coefs
+                                    </a>
+                                    <a href="{% url 'personnel:edt_classe' c.pk %}"
+                                       class="btn btn-outline-secondary"
+                                       title="Consulter et éditer l'emploi du temps">
+                                        <i class="bi bi-calendar3 me-1"></i>Emploi du temps
+                                    </a>
+                                    <a href="{% url 'parametrage:classe_modifier' c.pk %}"
+                                       class="btn btn-outline-secondary"
+                                       title="Modifier la classe">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'parametrage:classe_supprimer' c.pk %}"
+                                       class="btn btn-outline-danger"
+                                       title="Supprimer la classe">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                                Aucune classe enregistrée pour l'année scolaire {{ annee.libelle }}.
+                                <div class="mt-2">
+                                    <a href="{% url 'parametrage:classe_creer' %}" class="btn btn-sm btn-primary">
+                                        Créer la première classe
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 
 from eleves.models import Inscription
@@ -334,4 +336,153 @@ class ClotureCaisse(models.Model):
 
     def __str__(self):
         return f"Clôture caisse du {self.date.strftime('%d/%m/%Y')} (Écart : {self.ecart} FCFA)"
+
+
+# ==============================================================================
+# Primes et compléments de rémunération (Section 12.7)
+# ==============================================================================
+
+class PrimePersonnel(models.Model):
+    """Prime ou indemnité attribuée au personnel (Section 12.7)."""
+
+    personnel = models.ForeignKey(
+        "personnel.Personnel", on_delete=models.CASCADE, related_name="primes"
+    )
+    mois = models.PositiveSmallIntegerField(help_text="1 à 12")
+    annee = models.PositiveSmallIntegerField()
+    montant = models.DecimalField(max_digits=12, decimal_places=2)
+    motif = models.CharField(max_length=255, help_text="Ex. Surveillance examens, assiduité, transport")
+    date_attribution = models.DateField(auto_now_add=True)
+    accorde_par = models.ForeignKey(
+        "comptes.Utilisateur", on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = "Prime de personnel"
+        verbose_name_plural = "Primes de personnel"
+        ordering = ["-annee", "-mois", "-date_attribution"]
+
+    def __str__(self):
+        return f"Prime {self.montant} F — {self.personnel} ({self.motif})"
+
+
+# ==============================================================================
+# Comptabilité Générale en Partie Double (Section 13)
+# ==============================================================================
+
+class CompteComptable(models.Model):
+    """Compte du plan comptable général (Section 13.2)."""
+
+    class Nature(models.TextChoices):
+        ACTIF = "ACTIF", "Actif (classe 2, 3, 4, 5)"
+        PASSIF = "PASSIF", "Passif (classe 1, 4)"
+        CHARGE = "CHARGE", "Charge (classe 6)"
+        PRODUIT = "PRODUIT", "Produit (classe 7)"
+
+    numero = models.CharField(max_length=20, unique=True, help_text="Ex. 411000, 512000, 706000")
+    intitule = models.CharField(max_length=150)
+    nature = models.CharField(max_length=10, choices=Nature.choices, default=Nature.CHARGE)
+    actif = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Compte comptable"
+        verbose_name_plural = "Plan de comptes"
+        ordering = ["numero"]
+
+    def __str__(self):
+        return f"{self.numero} - {self.intitule}"
+
+
+class JournalComptable(models.Model):
+    """Journal auxiliaire de saisie comptable."""
+
+    code = models.CharField(max_length=10, unique=True, help_text="Ex. VT, CA, BQ, OD")
+    intitule = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = "Journal comptable"
+        verbose_name_plural = "Journaux comptables"
+        ordering = ["code"]
+
+    def __str__(self):
+        return f"{self.code} - {self.intitule}"
+
+
+class EcritureComptable(models.Model):
+    """Pièce comptable regroupant des lignes équilibrées en débit / crédit."""
+
+    class Statut(models.TextChoices):
+        BROUILLON = "BROUILLON", "Brouillon (modifiable)"
+        VALIDEE = "VALIDEE", "Validée (clôturée et irréversible)"
+
+    numero = models.CharField(max_length=30, unique=True, editable=False)
+    journal = models.ForeignKey(JournalComptable, on_delete=models.PROTECT, related_name="ecritures")
+    date_piece = models.DateField()
+    libelle = models.CharField(max_length=255)
+    reference_piece = models.CharField(max_length=100, blank=True, help_text="N° facture, reçu ou pièce justificative")
+    statut = models.CharField(max_length=10, choices=Statut.choices, default=Statut.BROUILLON)
+    date_validation = models.DateTimeField(null=True, blank=True)
+    valide_par = models.ForeignKey(
+        "comptes.Utilisateur", on_delete=models.SET_NULL, null=True, blank=True, related_name="ecritures_validees"
+    )
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Écriture comptable"
+        verbose_name_plural = "Écritures comptables"
+        ordering = ["-date_piece", "-date_creation"]
+
+    def __str__(self):
+        return f"{self.numero} ({self.date_piece}) : {self.libelle} [{self.get_statut_display()}]"
+
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            self.numero = self._generer_numero()
+        super().save(*args, **kwargs)
+
+    def _generer_numero(self):
+        from django.utils import timezone
+        annee = timezone.now().year
+        code_j = self.journal.code if self.journal_id else "ECR"
+        dernier = EcritureComptable.objects.filter(numero__startswith=f"{code_j}-{annee}-").order_by("-numero").first()
+        prochain = int(dernier.numero.split("-")[-1]) + 1 if dernier else 1
+        return f"{code_j}-{annee}-{prochain:06d}"
+
+    @property
+    def total_debit(self):
+        return sum((l.debit for l in self.lignes.all()), Decimal("0"))
+
+    @property
+    def total_credit(self):
+        return sum((l.credit for l in self.lignes.all()), Decimal("0"))
+
+    @property
+    def est_equilibree(self):
+        return self.total_debit == self.total_credit and self.total_debit > 0
+
+
+class LigneEcriture(models.Model):
+    """Mouvement unitaire sur un compte (débit ou crédit)."""
+
+    class CentreCout(models.TextChoices):
+        SCOLARITE = "SCOLARITE", "Scolarité générale"
+        CANTINE = "CANTINE", "Restauration / Cantine"
+        INFIRMERIE = "INFIRMERIE", "Santé / Infirmerie"
+        BIBLIOTHEQUE = "BIBLIOTHEQUE", "Bibliothèque"
+        ADMINISTRATION = "ADMIN", "Administration générale"
+
+    ecriture = models.ForeignKey(EcritureComptable, on_delete=models.CASCADE, related_name="lignes")
+    compte = models.ForeignKey(CompteComptable, on_delete=models.PROTECT, related_name="lignes")
+    libelle = models.CharField(max_length=200)
+    debit = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    credit = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    centre_cout = models.CharField(max_length=20, choices=CentreCout.choices, default=CentreCout.SCOLARITE)
+
+    class Meta:
+        verbose_name = "Ligne d'écriture"
+        verbose_name_plural = "Lignes d'écriture"
+
+    def __str__(self):
+        return f"{self.compte.numero} | D:{self.debit} C:{self.credit} — {self.libelle}"
+
 

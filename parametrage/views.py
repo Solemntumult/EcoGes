@@ -12,6 +12,7 @@ from comptes.services import journaliser
 
 from .forms import (
     AjouterMatiereClasseForm,
+    ClasseForm,
     CoefficientForm,
     EtablissementForm,
     HoraireForm,
@@ -99,17 +100,7 @@ def _erreurs_formulaire(formulaire):
 @login_required
 @roles_requis(ROLES_MATIERES)
 def matieres(request):
-    """Vue de contrôle : niveaux/séries, matières et accès au coefficient par classe."""
-    if request.method == "POST" and request.POST.get("creer_niveau"):
-        form_niveau = NiveauForm(request.POST)
-        if form_niveau.is_valid():
-            niveau = form_niveau.save()
-            journaliser(request.user, "Création de niveau", "Matières", str(niveau))
-            messages.success(request, f"Niveau « {niveau} » créé.")
-        else:
-            for erreur in _erreurs_formulaire(form_niveau):
-                messages.error(request, f"⚠️ Niveau — {erreur}")
-        return redirect("parametrage:matieres")
+    """Vue de contrôle des matières et accès aux coefficients par classe."""
     if request.method == "POST" and request.POST.get("creer_matiere"):
         form_matiere = MatiereForm(request.POST)
         if form_matiere.is_valid():
@@ -123,24 +114,51 @@ def matieres(request):
                     f"{nb_liees} classe(s) de {matiere.niveau} (tronc commun).",
                 )
             else:
-                messages.success(request, f"Matière « {matiere.libelle} » créée (le coefficient se règle par classe).")
+                messages.success(request, f"Matière « {matiere.libelle} » créée pour le niveau {matiere.niveau}.")
         else:
             for erreur in _erreurs_formulaire(form_matiere):
                 messages.error(request, f"⚠️ Matière — {erreur}")
         return redirect("parametrage:matieres")
 
-    form_niveau = NiveauForm()
     form_matiere = MatiereForm()
-    niveaux = list(Niveau.objects.select_related("serie").prefetch_related("matieres"))
     annee = AnneeScolaire.objects.filter(est_courante=True).first()
-    classes = (
-        Classe.objects.filter(annee_scolaire=annee).select_related("niveau__serie").order_by("niveau__ordre", "libelle")
+    classes_qs = (
+        Classe.objects.filter(annee_scolaire=annee)
+        .select_related("niveau__serie", "enseignant_principal")
+        .prefetch_related("matiere_coefficients", "quotas_horaires")
+        .order_by("niveau__ordre", "libelle")
         if annee else Classe.objects.none()
     )
+
+    classes_premier_cycle = []
+    classes_second_cycle = []
+    classes_autres = []
+
+    for c in classes_qs:
+        c.nb_matieres = c.matiere_coefficients.count()
+        c.total_coef = sum((cmc.coefficient for cmc in c.matiere_coefficients.all()), Decimal("0"))
+        c.total_heures = sum((q.heures_par_semaine for q in c.quotas_horaires.all()), Decimal("0"))
+
+        cycle = getattr(c.niveau, "cycle", "")
+        libelle = c.niveau.libelle.lower() if c.niveau else ""
+        if cycle == "COLLEGE" or any(k in libelle for k in ["6", "5", "4", "3"]):
+            classes_premier_cycle.append(c)
+        elif cycle == "LYCEE" or any(k in libelle for k in ["2nd", "seconde", "1ère", "première", "tle", "terminale"]):
+            classes_second_cycle.append(c)
+        else:
+            classes_autres.append(c)
+
+    matieres_globales = Matiere.objects.select_related("niveau__serie").prefetch_related("coefficients_par_classe").order_by("libelle")
+    niveaux = list(Niveau.objects.select_related("serie").prefetch_related("matieres"))
+
     return render(request, "parametrage/matieres.html", {
+        "annee": annee,
+        "classes_premier_cycle": classes_premier_cycle,
+        "classes_second_cycle": classes_second_cycle,
+        "classes_autres": classes_autres,
+        "total_classes": len(classes_qs),
+        "matieres_globales": matieres_globales,
         "niveaux": niveaux,
-        "classes": classes,
-        "form_niveau": form_niveau,
         "form_matiere": form_matiere,
     })
 
@@ -175,7 +193,7 @@ def basculer_tronc_commun(request, pk):
 @login_required
 @roles_requis(ROLES_MATIERES)
 def classe_matieres(request, pk):
-    """Coefficients (matière, classe) d'une classe précise — édition et contrôle."""
+    """Coefficients et quotas horaires (matière, classe) d'une classe précise — édition unifiée."""
     classe = get_object_or_404(
         Classe.objects.select_related("niveau__serie", "annee_scolaire"), pk=pk
     )
@@ -183,12 +201,21 @@ def classe_matieres(request, pk):
         ClasseMatiereCoefficient.objects.filter(classe=classe)
         .select_related("matiere").order_by("matiere__libelle")
     )
+    quotas_dict = {
+        q.matiere_id: q.heures_par_semaine
+        for q in QuotaHoraireMatiere.objects.filter(classe=classe)
+    }
+    for c in coeffs:
+        c.quota_heures = quotas_dict.get(c.matiere_id, Decimal("0"))
+
     total_coef = sum((c.coefficient for c in coeffs), Decimal("0"))
+    total_heures = sum(quotas_dict.values(), Decimal("0"))
     form_ajout = AjouterMatiereClasseForm(classe=classe)
     return render(request, "parametrage/classe_matieres.html", {
         "classe": classe,
         "coeffs": coeffs,
         "total_coef": total_coef,
+        "total_heures": total_heures,
         "form_ajout": form_ajout,
     })
 
@@ -196,17 +223,15 @@ def classe_matieres(request, pk):
 @login_required
 @roles_requis(ROLES_MATIERES)
 def ajouter_matiere_classe(request, pk):
-    """Ajoute une matière (existante ou nouvelle) à une classe, avec coefficient."""
+    """Ajoute une nouvelle matière à une classe, avec coefficient et quota horaire."""
     classe = get_object_or_404(Classe, pk=pk)
     if request.method == "POST":
         form = AjouterMatiereClasseForm(request.POST, classe=classe)
         if form.is_valid():
-            matiere = form.cleaned_data.get("matiere")
-            if matiere is None:
-                libelle = form.cleaned_data["libelle"].strip()
-                matiere, _ = Matiere.objects.get_or_create(
-                    libelle=libelle, niveau=classe.niveau
-                )
+            libelle = form.cleaned_data["libelle"].strip()
+            matiere, _ = Matiere.objects.get_or_create(
+                libelle=libelle, niveau=classe.niveau
+            )
             cmc, creee = ClasseMatiereCoefficient.objects.get_or_create(
                 classe=classe, matiere=matiere,
                 defaults={"coefficient": form.cleaned_data["coefficient"]},
@@ -214,45 +239,73 @@ def ajouter_matiere_classe(request, pk):
             if not creee:
                 cmc.coefficient = form.cleaned_data["coefficient"]
                 cmc.save(update_fields=["coefficient"])
+
+            h_sem = form.cleaned_data.get("heures_par_semaine")
+            if h_sem is not None:
+                QuotaHoraireMatiere.objects.update_or_create(
+                    classe=classe, matiere=matiere,
+                    defaults={"heures_par_semaine": h_sem},
+                )
+
             journaliser(
                 request.user, "Ajout de matière à une classe", "Matières",
-                f"{matiere.libelle} → {classe} (coef {cmc.coefficient})",
+                f"{matiere.libelle} → {classe} (coef {cmc.coefficient}, {h_sem or 0}h/sem)",
             )
             messages.success(
-                request, f"Matière « {matiere.libelle} » ajoutée à {classe.libelle} — coefficient {cmc.coefficient}."
+                request, f"Nouvelle matière « {matiere.libelle} » ajoutée à {classe.libelle} avec succès."
             )
             return redirect("parametrage:classe_matieres", pk=classe.pk)
         for erreur in form.non_field_errors():
             messages.error(request, f"⚠️ {erreur}")
-        for erreur in _erreurs_formulaire(form):
-            messages.error(request, f"⚠️ {erreur}")
+        for champ, erreurs in form.errors.items():
+            for err in erreurs:
+                messages.error(request, f"⚠️ {err}")
     return redirect("parametrage:classe_matieres", pk=classe.pk)
 
 
 @login_required
 @roles_requis(ROLES_MATIERES)
 def modifier_coefficient(request, pk, matiere_pk):
-    """Modifie le coefficient d'une matière pour UNE classe précise (sans effet de bord)."""
+    """Modifie simultanément le coefficient et le quota horaire d'une matière pour UNE classe précise."""
     cmc = get_object_or_404(ClasseMatiereCoefficient, classe_id=pk, matiere_id=matiere_pk)
     if request.method == "POST":
-        form = CoefficientForm(request.POST)
-        if form.is_valid():
-            cmc.coefficient = form.cleaned_data["coefficient"]
-            cmc.save(update_fields=["coefficient"])
-            journaliser(
-                request.user, "Modification de coefficient", "Matières",
-                f"{cmc.matiere.libelle} ({cmc.classe.libelle}) → {cmc.coefficient}",
-            )
-            messages.success(
-                request, f"Coefficient de « {cmc.matiere.libelle} » ({cmc.classe.libelle}) mis à {cmc.coefficient}."
-            )
+        coef_raw = request.POST.get("coefficient", "").strip()
+        heures_raw = request.POST.get("heures_par_semaine", "").strip()
+        msg_parts = []
+        if coef_raw:
+            try:
+                val = Decimal(coef_raw)
+                if Decimal("0.5") <= val <= Decimal("20"):
+                    cmc.coefficient = val
+                    cmc.save(update_fields=["coefficient"])
+                    msg_parts.append(f"coefficient {cmc.coefficient}")
+            except Exception:
+                pass
+        if heures_raw:
+            try:
+                h_val = Decimal(heures_raw)
+                if Decimal("0") <= h_val <= Decimal("40"):
+                    QuotaHoraireMatiere.objects.update_or_create(
+                        classe=cmc.classe, matiere=cmc.matiere,
+                        defaults={"heures_par_semaine": h_val},
+                    )
+                    msg_parts.append(f"quota {h_val}h/sem")
+            except Exception:
+                pass
+        journaliser(
+            request.user, "Modification matière-classe", "Matières",
+            f"{cmc.matiere.libelle} ({cmc.classe.libelle}) → {', '.join(msg_parts)}",
+        )
+        messages.success(
+            request, f"« {cmc.matiere.libelle} » ({cmc.classe.libelle}) : {', '.join(msg_parts)} enregistré."
+        )
     return redirect("parametrage:classe_matieres", pk=pk)
 
 
 @login_required
 @roles_requis(ROLES_MATIERES)
 def retirer_matiere_classe(request, pk, matiere_pk):
-    """Retire la liaison matière ↔ classe (le coefficient associé disparaît)."""
+    """Retire la liaison matière ↔ classe (coefficient et quota horaire supprimés)."""
     cmc = get_object_or_404(ClasseMatiereCoefficient, classe_id=pk, matiere_id=matiere_pk)
     if request.method == "POST":
         journaliser(
@@ -260,8 +313,10 @@ def retirer_matiere_classe(request, pk, matiere_pk):
             f"{cmc.matiere.libelle} retirée de {cmc.classe.libelle}",
         )
         cmc.delete()
+        QuotaHoraireMatiere.objects.filter(classe_id=pk, matiere_id=matiere_pk).delete()
         messages.success(request, f"Matière « {cmc.matiere.libelle} » retirée de {cmc.classe.libelle}.")
     return redirect("parametrage:classe_matieres", pk=pk)
+
 
 
 @login_required
@@ -364,3 +419,135 @@ def quotas_horaires(request, pk):
     return render(request, "parametrage/quotas_horaires.html", {
         "classe": classe, "quotas": quotas, "form": form,
     })
+
+
+# ---------------------------------------------------------------------------
+# Gestion des classes de l'établissement (Premier cycle et Second cycle)
+# ---------------------------------------------------------------------------
+
+@login_required
+@roles_requis(ROLES)
+def classes(request):
+    """Liste complète des classes par année scolaire avec distinction des cycles."""
+    annee_courante = AnneeScolaire.objects.filter(est_courante=True).first()
+    annee_id = request.GET.get("annee")
+    if annee_id:
+        annee = get_object_or_404(AnneeScolaire, pk=annee_id)
+    else:
+        annee = annee_courante
+
+    annees = AnneeScolaire.objects.order_by("-date_debut")
+    cycle_filtre = request.GET.get("cycle", "")
+
+    if annee:
+        classes_qs = Classe.objects.filter(annee_scolaire=annee)
+    else:
+        classes_qs = Classe.objects.all()
+
+    classes_qs = (
+        classes_qs.select_related("niveau", "niveau__serie", "enseignant_principal")
+        .prefetch_related("inscriptions")
+        .order_by("niveau__ordre", "libelle")
+    )
+
+    if cycle_filtre in ("PREMIER_CYCLE", "SECOND_CYCLE"):
+        classes_qs = classes_qs.filter(niveau__cycle=cycle_filtre)
+
+    classes_premier_cycle = [c for c in classes_qs if c.niveau.cycle == "PREMIER_CYCLE"]
+    classes_second_cycle = [c for c in classes_qs if c.niveau.cycle == "SECOND_CYCLE"]
+
+    total_classes = len(classes_qs)
+    total_eleves = sum(c.effectif_actuel for c in classes_qs)
+
+    return render(
+        request,
+        "parametrage/classes.html",
+        {
+            "annee": annee,
+            "annee_courante": annee_courante,
+            "annees": annees,
+            "cycle_filtre": cycle_filtre,
+            "classes": classes_qs,
+            "classes_premier_cycle": classes_premier_cycle,
+            "classes_second_cycle": classes_second_cycle,
+            "total_classes": total_classes,
+            "total_eleves": total_eleves,
+        },
+    )
+
+
+@login_required
+@roles_requis(ROLES)
+def classe_creer(request):
+    """Création d'une nouvelle classe (indépendante ou associée à l'année courante si active)."""
+    annee = AnneeScolaire.objects.filter(est_courante=True).first()
+
+    if request.method == "POST":
+        form = ClasseForm(request.POST)
+        if form.is_valid():
+            classe = form.save(commit=False)
+            if annee:
+                classe.annee_scolaire = annee
+            # Vérification de doublon (niveau, libelle)
+            filtre_doublon = {"niveau": classe.niveau, "libelle": classe.libelle}
+            if annee:
+                filtre_doublon["annee_scolaire"] = annee
+            if Classe.objects.filter(**filtre_doublon).exists():
+                form.add_error("libelle", f"La classe {classe.libelle} existe déjà pour ce niveau.")
+            else:
+                classe.save()
+                journaliser(request.user, "Création de classe", "Paramétrage", f"{classe} créée")
+                messages.success(request, f"La classe {classe.libelle} a été créée avec succès.")
+                return redirect("parametrage:classes")
+    else:
+        form = ClasseForm()
+
+    return render(request, "parametrage/classe_form.html", {"form": form, "titre": "Créer une nouvelle classe", "annee": annee})
+
+
+@login_required
+@roles_requis(ROLES)
+def classe_modifier(request, pk):
+    """Modification d'une classe existante."""
+    classe = get_object_or_404(Classe.objects.select_related("niveau", "annee_scolaire"), pk=pk)
+
+    if request.method == "POST":
+        form = ClasseForm(request.POST, instance=classe)
+        if form.is_valid():
+            classe_modifiee = form.save(commit=False)
+            # Vérification de doublon
+            if Classe.objects.filter(
+                niveau=classe_modifiee.niveau,
+                annee_scolaire=classe.annee_scolaire,
+                libelle=classe_modifiee.libelle
+            ).exclude(pk=classe.pk).exists():
+                form.add_error("libelle", f"Une classe {classe_modifiee.libelle} existe déjà pour ce niveau.")
+            else:
+                classe_modifiee.save()
+                journaliser(request.user, "Modification de classe", "Paramétrage", f"{classe} modifiée")
+                messages.success(request, f"La classe {classe.libelle} a été mise à jour.")
+                return redirect("parametrage:classes")
+    else:
+        form = ClasseForm(instance=classe)
+
+    return render(request, "parametrage/classe_form.html", {"form": form, "classe": classe, "titre": f"Modifier la classe {classe.libelle}", "annee": classe.annee_scolaire})
+
+
+@login_required
+@roles_requis(ROLES)
+def classe_supprimer(request, pk):
+    """Suppression d'une classe (bloquée si des élèves ou des notes y sont rattachés)."""
+    classe = get_object_or_404(Classe, pk=pk)
+    if classe.inscriptions.exists():
+        messages.error(request, f"Impossible de supprimer {classe.libelle} : {classe.inscriptions.count()} élève(s) y sont rattaché(s).")
+        return redirect("parametrage:classes")
+
+    if request.method == "POST":
+        libelle = str(classe)
+        classe.delete()
+        journaliser(request.user, "Suppression de classe", "Paramétrage", libelle)
+        messages.success(request, f"La classe {libelle} a été supprimée.")
+        return redirect("parametrage:classes")
+
+    return render(request, "parametrage/classe_supprimer.html", {"classe": classe})
+

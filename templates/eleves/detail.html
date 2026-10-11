@@ -23,6 +23,7 @@
             </div>
         </div>
         <div class="d-flex gap-2">
+            <a href="{% url 'eleves:reinscrire_individuel' eleve.pk %}" class="btn btn-outline-success"><i class="bi bi-arrow-repeat me-1"></i>Réinscrire (Nouvelle année)</a>
             <a href="{% url 'eleves:carte_scolaire' eleve.pk %}" class="btn btn-outline-primary" target="_blank"><i class="bi bi-qr-code me-1"></i>Carte scolaire</a>
             <a href="{% url 'eleves:modifier' eleve.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Modifier</a>
             <a href="{% url 'eleves:transferer' eleve.pk %}" class="btn btn-outline-danger"><i class="bi bi-arrow-left-right me-1"></i>Transférer / radier</a>

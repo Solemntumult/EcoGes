@@ -3,68 +3,143 @@
 
 {% block content %}
 <div class="container-fluid px-3 px-lg-4 py-4">
-    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
-            <h1 class="page-title mb-0">Élèves</h1>
-            <p class="text-muted mb-0 mt-1">Recherche multicritère et gestion des dossiers (UC-11 à UC-16).</p>
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="page-title mb-0">Gestion des Élèves</h1>
+                {% if annee_courante %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                    <i class="bi bi-calendar-check me-1"></i>Année active : {{ annee_courante.libelle }}
+                </span>
+                {% endif %}
+            </div>
+            <p class="text-muted mb-0 mt-1">Dossiers scolaires, scolarité, contacts tuteurs et suivi des frais</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'eleves:reinscription' %}" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Réinscription en masse</a>
-            <a href="{% url 'eleves:creation' %}" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Inscrire un élève</a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'eleves:modele_import_excel' %}" class="btn btn-outline-secondary" title="Télécharger le modèle vierge pour l'importation">
+                <i class="bi bi-file-earmark-excel me-1"></i>Modèle Excel
+            </a>
+            <a href="{% url 'eleves:import_excel' %}" class="btn btn-outline-primary" title="Importer des dossiers depuis un fichier Excel ou CSV">
+                <i class="bi bi-cloud-arrow-up me-1"></i>Importation Excel
+            </a>
+            <a href="{% url 'eleves:creation' %}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-person-plus-fill me-1"></i>Inscrire un élève
+            </a>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <form method="get" class="row g-2 align-items-end">
-                <div class="col-md-3">{{ form.nom }}</div>
-                <div class="col-md-2">{{ form.matricule }}</div>
-                <div class="col-md-3">{{ form.classe }}</div>
-                <div class="col-md-2">{{ form.statut }}</div>
+    <!-- Filtres multicritères en direct -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-3">
+            <form id="recherche-form" method="get" class="row g-2 align-items-end"
+                  hx-get="{% url 'eleves:liste' %}"
+                  hx-trigger="input changed delay:250ms, change from:select"
+                  hx-target="#eleves-table-container"
+                  hx-indicator="#recherche-spinner">
+                
+                <!-- Année scolaire -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="bi bi-calendar-event me-1"></i>Année
+                    </label>
+                    <select name="annee" id="filter-annee" class="form-select form-select-sm">
+                        <option value="">Toutes les années (Archives)</option>
+                        {% for annee in annees_scolaires %}
+                        <option value="{{ annee.id }}" {% if annee_selectionnee and annee_selectionnee.id == annee.id %}selected{% elif not annee_selectionnee and annee.est_courante %}selected{% endif %}>
+                            {{ annee.libelle }} {% if annee.est_courante %}(en cours){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Classe -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="bi bi-mortarboard me-1"></i>Classe
+                    </label>
+                    {{ form.classe }}
+                </div>
+
+                <!-- Nom / Prénoms -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="bi bi-search me-1"></i>Nom ou prénom
+                    </label>
+                    <input type="text" name="nom" id="filter-nom" class="form-control form-control-sm" placeholder="Recherche nom ou prénom..." value="{{ request.GET.nom|default:'' }}">
+                </div>
+
+                <!-- Matricule -->
                 <div class="col-md-2">
-                    <button class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> Rechercher</button>
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="bi bi-upc-scan me-1"></i>Matricule
+                    </label>
+                    <input type="text" name="matricule" id="filter-matricule" class="form-control form-control-sm" placeholder="ELV-..." value="{{ request.GET.matricule|default:'' }}">
+                </div>
+
+                <!-- Réinitialiser -->
+                <div class="col-md-1">
+                    <a href="{% url 'eleves:liste' %}" class="btn btn-sm btn-outline-secondary w-100" title="Réinitialiser les filtres">
+                        <i class="bi bi-x-circle"></i>
+                    </a>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="card mt-3">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead><tr><th>Matricule</th><th>Nom & prénoms</th><th>Sexe</th><th>Classe actuelle</th><th>Régime</th><th>Statut</th><th></th></tr></thead>
-                    <tbody>
-                        {% for eleve in eleves %}
-                        <tr>
-                            <td><span class="badge badge-soft-secondary font-monospace">{{ eleve.matricule }}</span></td>
-                            <td class="fw-semibold">{{ eleve.nom }} {{ eleve.prenoms }}</td>
-                            <td>{{ eleve.get_sexe_display }}</td>
-                            <td>
-                                {% with ins=eleve.inscriptions.all %}
-                                    {% for i in ins %}{% if i.statut == 'ACTIVE' %}{{ i.classe.libelle }}{% endif %}{% endfor %}
-                                {% endwith %}
-                            </td>
-                            <td>{{ eleve.get_regime_display }}</td>
-                            <td>
-                                {% if eleve.statut == 'ACTIF' %}<span class="badge badge-soft-success">Actif</span>
-                                {% elif eleve.statut == 'TRANSFERE' %}<span class="badge badge-soft-warning">Transféré</span>
-                                {% elif eleve.statut == 'RADIE' %}<span class="badge badge-soft-danger">Radié</span>
-                                {% else %}<span class="badge badge-soft-secondary">Diplômé</span>{% endif %}
-                            </td>
-                            <td class="text-end">
-                                <a href="{% url 'eleves:detail' eleve.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-folder2-open"></i> Dossier</a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="7" class="text-center text-muted py-4">Aucun élève ne correspond à la recherche.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {% if eleves.paginator.num_pages > 1 %}
-        <div class="card-footer"><nav>{% include "pagination.html" with page_obj=eleves %}</nav></div>
-        {% endif %}
-    </div>
+    <!-- Conteneur du tableau dynamique -->
+    {% include "eleves/_table_eleves.html" %}
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("recherche-form");
+        const container = document.getElementById("eleves-table-container");
+        if (!form || !container) return;
+
+        // Moteur de secours autonome (Fetch) si HTMX n'est pas actif ou bloqué par le navigateur
+        let debounceTimer;
+        function actualiserTableau() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function() {
+                const spinner = document.getElementById("recherche-spinner");
+                if (spinner) spinner.style.display = "inline-block";
+
+                const formData = new FormData(form);
+                const params = new URLSearchParams(formData);
+                fetch("{% url 'eleves:liste' %}?" + params.toString(), {
+                    headers: { "HX-Request": "true" }
+                })
+                .then(function(res) { return res.text(); })
+                .then(function(html) {
+                    const temp = document.createElement("div");
+                    temp.innerHTML = html;
+                    const nouveauContainer = temp.querySelector("#eleves-table-container");
+                    if (nouveauContainer) {
+                        container.innerHTML = nouveauContainer.innerHTML;
+                    } else {
+                        container.innerHTML = html;
+                    }
+                })
+                .catch(function(err) {
+                    console.error("Erreur de filtrage en direct :", err);
+                })
+                .finally(function() {
+                    const spinner = document.getElementById("recherche-spinner");
+                    if (spinner) spinner.style.display = "none";
+                });
+            }, 250);
+        }
+
+        // Si HTMX n'est pas chargé sur la page
+        if (typeof window.htmx === "undefined") {
+            form.querySelectorAll("input").forEach(function(input) {
+                input.addEventListener("input", actualiserTableau);
+            });
+            form.querySelectorAll("select").forEach(function(select) {
+                select.addEventListener("change", actualiserTableau);
+            });
+        }
+    });
+    </script>
+
 </div>
 {% endblock %}

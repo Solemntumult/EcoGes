@@ -29,9 +29,8 @@
                             </label>
                         </div>
                         <div class="mt-3">
-                            <label class="form-label">Échéances éligibles</label>
-                            {{ form.echeances }}
-                            <div class="form-text">Pour une imputation manuelle, maintenez Ctrl pour sélectionner plusieurs échéances.</div>
+                            <label class="form-label fw-semibold">Échéances éligibles & situation de l'élève</label>
+                            {% include "finances/_echeances_options.html" %}
                         </div>
                         {% if form.non_field_errors %}<div class="alert alert-danger py-2 mt-3">{{ form.non_field_errors }}</div>{% endif %}
                         <div class="d-flex gap-2 mt-4">

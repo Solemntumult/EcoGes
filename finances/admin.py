@@ -3,7 +3,8 @@ from django.contrib import admin
 from .models import (
     Echeance, Facture, FicheDePaie, ImputationPaiement, LigneFacture,
     Paiement, Recu, Remise, TransactionMobileMoney, CategorieDepense,
-    Depense, ClotureCaisse
+    Depense, ClotureCaisse, PrimePersonnel, CompteComptable, JournalComptable,
+    EcritureComptable, LigneEcriture
 )
 
 
@@ -78,3 +79,39 @@ class DepenseAdmin(admin.ModelAdmin):
 class ClotureCaisseAdmin(admin.ModelAdmin):
     list_display = ("date", "solde_ouverture", "total_encaissements", "total_decaissements", "solde_theorique", "solde_physique", "ecart", "cloture_par")
     date_hierarchy = "date"
+
+
+@admin.register(PrimePersonnel)
+class PrimePersonnelAdmin(admin.ModelAdmin):
+    list_display = ("personnel", "montant", "motif", "mois", "annee", "date_attribution")
+    list_filter = ("annee", "mois")
+    search_fields = ("personnel__nom", "personnel__prenoms", "motif")
+
+
+@admin.register(CompteComptable)
+class CompteComptableAdmin(admin.ModelAdmin):
+    list_display = ("numero", "intitule", "nature", "actif")
+    list_filter = ("nature", "actif")
+    search_fields = ("numero", "intitule")
+
+
+@admin.register(JournalComptable)
+class JournalComptableAdmin(admin.ModelAdmin):
+    list_display = ("code", "intitule")
+    search_fields = ("code", "intitule")
+
+
+class LigneEcritureInline(admin.TabularInline):
+    from .models import LigneEcriture
+    model = LigneEcriture
+    extra = 2
+
+
+@admin.register(EcritureComptable)
+class EcritureComptableAdmin(admin.ModelAdmin):
+    list_display = ("numero", "date_piece", "journal", "libelle", "statut", "total_debit", "total_credit", "est_equilibree")
+    list_filter = ("journal", "statut", "date_piece")
+    search_fields = ("numero", "libelle", "reference_piece")
+    readonly_fields = ("numero",)
+    inlines = [LigneEcritureInline]
+

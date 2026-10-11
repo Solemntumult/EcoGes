@@ -1,38 +1,133 @@
 {% extends "base.html" %}
-{% block title %}Emploi du temps{% endblock %}
+{% block title %}Emploi du temps — Hub central{% endblock %}
 
 {% block content %}
 <div class="container-fluid px-3 px-lg-4 py-4">
-    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <!-- Header principal -->
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <div>
-            <h1 class="page-title mb-0">Emploi du temps</h1>
-            <p class="text-muted mb-0 mt-1">Consultation par classe, par enseignant, et création des créneaux avec détection de conflits (UC-19).</p>
+            <h1 class="page-title mb-1">Gestion des Emplois du Temps</h1>
+            <p class="text-muted mb-0">
+                Année scolaire : <strong>{{ annee|default:"Non définie" }}</strong> 
+                {% if horaire_actif %}
+                    · Mode horaire : <span class="badge bg-light text-dark border"><i class="bi bi-clock me-1 text-primary"></i>{{ horaire_actif.libelle }} ({{ horaire_actif.heure_debut_journee|time:"H:i" }} - {{ horaire_actif.heure_fin_journee|time:"H:i" }})</span>
+                {% else %}
+                    · <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Aucun horaire actif</span>
+                {% endif %}
+            </p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'personnel:edt_enseignant' %}" class="btn btn-outline-primary"><i class="bi bi-person-badge me-1"></i>Par enseignant</a>
-            <a href="{% url 'personnel:creer_creneau' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Ajouter un créneau</a>
+        <div class="d-flex flex-wrap gap-2">
+            {% if 'ADMIN' in user.role or 'CENSEUR' in user.role or user.is_superuser %}
+            <a href="{% url 'personnel:generer_edt_global' %}" class="btn btn-outline-primary"
+               onclick="return confirm('Voulez-vous lancer la génération automatique intelligente pour TOUTES les classes ? Les plannings existants seront recalculés selon les quotas et disponibilités.');">
+                <i class="bi bi-magic me-1"></i>Générer tout l'établissement
+            </a>
+            <a href="{% url 'personnel:creer_creneau' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Nouveau créneau
+            </a>
+            {% endif %}
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header fw-semibold">Grilles par classe — {{ annee|default:"aucune année en cours" }}</div>
-        <div class="card-body">
-            <div class="row g-3">
-                {% for classe in classes %}
-                <div class="col-md-4 col-lg-3">
-                    <a href="{% url 'personnel:edt_classe' classe.pk %}" class="text-decoration-none">
-                        <div class="card stat-card h-100">
-                            <div class="card-body text-center py-4">
-                                <div class="fs-2 text-primary"><i class="bi bi-calendar3"></i></div>
-                                <div class="fw-bold mt-2">{{ classe.libelle }}</div>
-                                <div class="small text-muted">{{ classe.niveau }}</div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                {% empty %}
-                <div class="col-12 text-muted">Aucune classe définie pour l'année en cours.</div>
-                {% endfor %}
+    <!-- Palette de navigation du module Emploi du temps -->
+    <ul class="nav nav-pills mb-4 gap-2 bg-light p-2 rounded border">
+        <li class="nav-item">
+            <a class="nav-link active fw-semibold" href="{% url 'personnel:edt_par_classe' %}">
+                <i class="bi bi-grid-3x3-gap me-2"></i>Grilles par classe
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-secondary" href="{% url 'personnel:edt_enseignant' %}">
+                <i class="bi bi-person-badge me-2"></i>Grilles par enseignant
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-secondary" href="{% url 'personnel:disponibilites_enseignants' %}">
+                <i class="bi bi-person-check me-2"></i>Disponibilités des enseignants
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-secondary" href="{% url 'parametrage:horaires' %}">
+                <i class="bi bi-clock-history me-2"></i>Horaires & pauses scolaires
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tableau détaillé des classes -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-semibold text-dark">
+                <i class="bi bi-list-columns-reverse me-2 text-primary"></i>Planning hebdomadaire par classe
+            </h5>
+            <span class="badge bg-light text-secondary border">Total : {{ classes_stats|length }} classe(s)</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-3 py-3" style="min-width: 180px;">Classe</th>
+                            <th>Niveau</th>
+                            <th class="text-center">Cours hebdomadaires</th>
+                            <th style="min-width: 250px;">Temps scolaire de la classe (Heures / Semaine)</th>
+                            <th class="text-end pe-3" style="min-width: 200px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in classes_stats %}
+                        <tr>
+                            <td class="ps-3">
+                                <a href="{% url 'personnel:edt_classe' item.classe.pk %}" class="fw-bold text-decoration-none text-primary">
+                                    {{ item.classe.libelle }}
+                                </a>
+                                {% if item.classe.serie %}
+                                    <span class="badge bg-light text-dark border ms-1">{{ item.classe.serie }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary">{{ item.classe.niveau }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge {% if item.nb_creneaux > 0 %}bg-primary-subtle text-primary{% else %}bg-light text-muted border{% endif %} px-2 py-1">
+                                    {{ item.nb_creneaux }} séances / sem.
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="fw-semibold text-dark">{{ item.heures_planifiees }} h programmées</span>
+                                    <span class="text-muted">Quota prévu : {{ item.quota_total }} h</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar {% if item.pct_couverture >= 100 %}bg-success{% elif item.pct_couverture >= 60 %}bg-primary{% else %}bg-warning{% endif %}"
+                                         role="progressbar" style="width: {{ item.pct_couverture }}%;"
+                                         aria-valuenow="{{ item.pct_couverture }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </td>
+                            <td class="text-end pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'personnel:edt_classe' item.classe.pk %}" class="btn btn-outline-primary" title="Consulter et éditer la grille">
+                                        <i class="bi bi-eye me-1"></i>Ouvrir la grille
+                                    </a>
+                                    {% if 'ADMIN' in user.role or 'CENSEUR' in user.role or user.is_superuser %}
+                                    <a href="{% url 'personnel:generer_edt' item.classe.pk %}" class="btn btn-outline-secondary"
+                                       title="Générer automatiquement cette classe"
+                                       onclick="return confirm('Régénérer automatiquement l\\'emploi du temps de {{ item.classe.libelle }} ?');">
+                                        <i class="bi bi-magic me-1"></i>Générer
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                Aucune classe enregistrée pour l'année scolaire active.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
